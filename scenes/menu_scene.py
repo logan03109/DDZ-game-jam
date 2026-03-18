@@ -52,7 +52,7 @@ class MenuScene:
 
     def _draw_title(self):
         """Title with cyan/magenta glitch offset on alternate frames."""
-        title = "CYBERPUNK DDZ"
+        title = "STEAMPUNK DDZ"
         offset = 4 if self.glitch_on else 0
 
         # Cyan ghost
@@ -73,7 +73,7 @@ class MenuScene:
         self.screen.blit(s3, r3)
 
         # Subtitle
-        sub = self.font_sub.render(">> FIGHT THE LANDLORD  //  CYBERPUNK EDITION <<", True, (80, 180, 160))
+        sub = self.font_sub.render(">> FIGHT THE LANDLORD  //  STEAMPUNK EDITION <<", True, (80, 180, 160))
         self.screen.blit(sub, sub.get_rect(centerx=W//2, centery=H//2 - 60))
 
     def _draw_button(self):
