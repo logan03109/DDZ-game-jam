@@ -7,7 +7,7 @@ from scenes.menu_scene import MenuScene
 def main():
     pygame.init()
     screen = pygame.display.set_mode((W, H))
-    pygame.display.set_caption("Cyberpunk DDZ")
+    pygame.display.set_caption("Steampunk DDZ")
     clock = pygame.time.Clock()
 
     current_scene = MenuScene(screen)
@@ -18,8 +18,9 @@ def main():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            current_scene.handle_event(event)
-
+            result = current_scene.handle_event(event)
+            if result:
+                current_scene = result
         next_scene = current_scene.update(dt)
         if next_scene:
             current_scene = next_scene   # scene switching
