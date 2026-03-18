@@ -2,7 +2,7 @@
 # data
 suits = ["Hearts", "Spades", "Diamonds", "Clubs"]  # suits
 values = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]  # values, excluding jokers
-sets = ["single", "double", "triple", "triple+1", "triple+2", "bomb", "single_straight", "double_straight",
+sets_list = ["single", "double", "triple", "triple+1", "triple+2", "bomb", "single_straight", "double_straight",
         "triple_straight", "triple+1_straight", "triple+2_straight", "jokerbomb"]  # every type of set
 gimmicks = ["bleed", "regen", "damage_reduction", "damage_multiplier"]  # gimmicks
 base_damage_constant = {"single": 1,

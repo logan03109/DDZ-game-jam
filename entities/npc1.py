@@ -1,12 +1,14 @@
-import pygame
+# entities/npc1.py
+import random
 
-class NPC(pygame.sprite.Sprite):
-    def __init__(self, x, y):
-        super().__init__()
-        pass
+class Boss:
+    def __init__(self):
+        self.hp      = 500
+        self.max_hp  = 500
+        self.name    = "Shadow Landlord"
 
-    def update(self, dt):
-        pass
+    def attack(self):
+        return random.randint(15, 45)
 
-    def draw(self, screen):
-        pass
+    def is_alive(self):
+        return self.hp > 0
