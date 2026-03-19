@@ -1,10 +1,7 @@
 # scenes/game_scene.py
-import pygame
-import random
-from settings import suits, values
 from entities.player import Player, validate_set, damage_calc
 from entities.npc1 import Boss
-
+from settings import *
 # Card dimensions
 CARD_W = 72
 CARD_H = 100
@@ -58,6 +55,7 @@ class GameScene:
         self.boss   = Boss()
 
         self.selected = set()   # indices into self.player.hand.hand
+        self.trigger_win = False
         self.message  = "Select cards and press PLAY"
         self.msg_col  = GREY
         self.msg_timer = 0      # how many frames to show message
@@ -76,6 +74,9 @@ class GameScene:
         self.sort_btn = pygame.Rect(self.W // 2 + btn_w // 2 + 20, self.H - 80, btn_w, btn_h)
         self.shuffle_btn = pygame.Rect(self.W // 2 - btn_w * 3 // 2 - 20, self.H - 80, btn_w, btn_h)
         self.shuffle_hovered = False
+
+        self.plays_remaining = 3
+        self.shuffles_remaining = 3
 
         # Card rects — rebuilt every draw call
         self.card_rects = []
@@ -158,20 +159,26 @@ class GameScene:
         self.screen.blit(txt, txt.get_rect(center=self.shuffle_btn.center))
 
     def _shuffle_hand(self):
+        if self.shuffles_remaining <= 0:
+            self.message = "No shuffles remaining!"
+            self.msg_col = RED
+            return
+
         for card in self.player.hand.hand:
             self.deck.pool.append(card)
         self.player.hand.hand = []
 
         self.deck.redeck()
 
-        for _ in range(20):
+        for _ in range(PLAYER_HAND_SIZE):
             if self.deck.deck:
                 self.player.hand.hand.append(self.deck.deck.pop())
             else:
                 break
 
+        self.shuffles_remaining -= 1  # ADD
         self.selected = set()
-        self.message = "Hand reshuffled!"
+        self.message = f"Hand reshuffled!  |  {self.shuffles_remaining} shuffles left"
         self.msg_col = (200, 80, 255)
 
     def _draw_message(self):
@@ -180,22 +187,52 @@ class GameScene:
             self.screen.blit(txt, txt.get_rect(centerx=self.W // 2, centery=self.H - CARD_H - 140))
 
     def _draw_info(self):
-        """Top-left info panel — player HP and selected count."""
-        lines = [
-            f"HP      : {self.player.hp}",
-            f"BOSS HP : {self.boss.hp}",
-            f"SELECTED: {len(self.selected)} card(s)",
-        ]
-        pygame.draw.rect(self.screen, PANEL_COL,  (20, 20, 260, 90), border_radius=8)
-        pygame.draw.rect(self.screen, BORDER_COL, (20, 20, 260, 90), 1, border_radius=8)
-        for i, line in enumerate(lines):
-            col = RED if ("HP" in line and self.player.hp < 300) else WHITE
-            surf = self.font_small.render(line, True, col)
-            self.screen.blit(surf, (32, 28 + i * 22))
+        # Card counter — top left
+        pygame.draw.rect(self.screen, PANEL_COL, (20, 20, 200, 50), border_radius=8)
+        pygame.draw.rect(self.screen, BORDER_COL, (20, 20, 200, 50), 1, border_radius=8)
+        card_count = self.font_small.render(
+            f"CARDS LEFT: {len(self.deck.deck) + len(self.player.hand.hand)}", True, WHITE)
+        self.screen.blit(card_count, card_count.get_rect(center=(120, 45)))
+
+        # Boss health bar — top centre
+        bar_w, bar_h = 400, 30
+        bar_x = self.W // 2 - bar_w // 2
+        bar_y = 20
+
+        # Background
+        pygame.draw.rect(self.screen, (40, 10, 10), (bar_x, bar_y, bar_w, bar_h), border_radius=8)
+
+        # Fill — clamped so it never goes below 0
+        fill = max(0, int(bar_w * (self.boss.hp / self.boss.max_hp)))
+        if fill > 0:
+            pygame.draw.rect(self.screen, (200, 40, 40), (bar_x, bar_y, fill, bar_h), border_radius=8)
+
+        # Border                                                          # ADD FROM HERE
+        pygame.draw.rect(self.screen, (220, 60, 60), (bar_x, bar_y, bar_w, bar_h), 2, border_radius=8)
+
+        # Boss name inside bar
+        boss_label = self.font_small.render(f"{self.boss.name}", True, WHITE)
+        self.screen.blit(boss_label, boss_label.get_rect(center=(self.W // 2, bar_y + bar_h // 2)))
+
+        # HP number below bar
+        hp_label = self.font_small.render(f"{max(0, self.boss.hp)}", True, (220, 60, 60))
+        self.screen.blit(hp_label, hp_label.get_rect(center=(self.W // 2, bar_y + bar_h + 15)))
+
+        plays_surf = self.font_small.render(f"PLAYS LEFT: {self.plays_remaining}", True, NEON_TEAL)
+        self.screen.blit(plays_surf, plays_surf.get_rect(topleft=(20, 80)))
+
+        shuffles_surf = self.font_small.render(f"SHUFFLES LEFT: {self.shuffles_remaining}", True, (200, 80, 255))
+        self.screen.blit(shuffles_surf, shuffles_surf.get_rect(topleft=(20, 100)))
+
+        # Border
 
     # ── game logic ────────────────────────────────────────────
 
     def _play_turn(self):
+        if self.plays_remaining <= 0:
+            self.message = "No plays remaining!"
+            self.msg_col = RED
+            return
         if not self.selected:
             self.message = "No cards selected!"
             self.msg_col = RED
@@ -209,34 +246,24 @@ class GameScene:
             self.msg_col = RED
             return
 
-        # Player attacks boss
         dmg = damage_calc(cards, ddz_set, self.player.damage_mult)
         self.boss.hp -= int(dmg)
 
-        # Boss attacks back
-        boss_dmg = self.boss.attack()
-        self.player.hp -= boss_dmg
-
-        # Discard played cards permanently — do NOT add to pool
         for card in cards:
             self.player.hand.hand.remove(card)
 
-        # Draw replacement cards from deck
-        cards_used = len(cards)
-        for _ in range(min(cards_used, len(self.deck.deck))):
+        for _ in range(min(len(cards), len(self.deck.deck))):
             self.player.hand.hand.append(self.deck.deck.pop())
 
-        # Re-sort hand after drawing
         self.player.hand.hand.sort(key=lambda card: card.numeric_rank())
 
+        self.plays_remaining -= 1  # ADD
         self.selected = set()
-        self.message = f"{ddz_set.upper()}!  -{int(dmg)} to boss  -{boss_dmg} to you"
+        self.message = f"{ddz_set.upper()}!  -{int(dmg)} to boss  |  {self.plays_remaining} plays left"
         self.msg_col = NEON_TEAL
 
         if self.boss.hp <= 0:
             self.trigger_win = True
-        if self.player.hp <= 0:
-            self.trigger_lose = True
 
     # ── scene interface ───────────────────────────────────────
 
@@ -287,12 +314,9 @@ class GameScene:
         return None
 
     def update(self, dt):
-        if self.boss.hp <= 0:
+        if self.trigger_win:
             from scenes.win_scene import WinScene
             return WinScene(self.screen, self.W, self.H)
-        if self.player.hp <= 0:
-            self.message = "YOU DIED"
-            self.msg_col = (210, 50, 50)
         return None
 
     def draw(self):

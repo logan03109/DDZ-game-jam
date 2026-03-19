@@ -64,15 +64,7 @@ class PlayerHand(Hand):
         super().__init__()
 
     def draw_hand(self, deck):  # draws 20 at start
-        for n in range(20):
-            self.hand.append(deck.pop())
-
-class BossHand(Hand):
-    def __init__(self):
-        super().__init__()
-
-    def draw_hand(self, deck):
-        for n in range(17):
+        for n in range(PLAYER_HAND_SIZE):
             self.hand.append(deck.pop())
 
 
@@ -112,14 +104,11 @@ class Deck:
     def shuffle(self):  # shuffles deck
         random.shuffle(self.deck)
 
-    def make_deck(self):  # makes two decks
+    def make_deck(self):
         for suit in suits:
             for value in values:
-                self.deck.append(Card(suit, value))
-                self.deck.append(Card(suit, value))
+                self.deck.append(Card(suit, value))  # only once, not twice
         self.deck.append(Card("Joker", "Small"))
-        self.deck.append(Card("Joker", "Small"))
-        self.deck.append(Card("Joker", "Big"))
         self.deck.append(Card("Joker", "Big"))
         self.shuffle()
 
@@ -244,23 +233,5 @@ def validate_set(cards):  # you pick cards, and it finds if it is valid/what kin
 
 def damage_calc(cards, ddz_set, damage_mult=1):
     card_values = [card.numeric_rank() for card in cards]
-    for card in cards:
-        if card.value == "J":
-            card_values.append(11)
-        elif card.value == "Q":
-            card_values.append(12)
-        elif card.value == "K":
-            card_values.append(13)
-        elif card.value == "A":
-            card_values.append(14)
-        elif card.value == "2":
-            card_values.append(15)
-        elif card == Card("Joker", "Small"):
-            card_values.append(16)
-        elif card == Card("Joker", "Big"):
-            card_values.append(17)
-        else:
-            card_values.append(int(card.value))
-    # temp code for damage
     damage = max(card_values) * base_damage_constant[ddz_set] * damage_mult
     return damage

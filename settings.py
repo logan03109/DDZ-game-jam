@@ -20,3 +20,6 @@ base_damage_constant = {"single": 1,
 FPS  = 60
 BG_COLOUR   = (15, 20, 40)
 CARD_WHITE  = (240, 235, 220)
+
+PLAYER_HAND_SIZE  = 20
+BOSS_HAND_SIZE    = 17

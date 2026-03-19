@@ -1,7 +1,6 @@
 # libraries
 import random
 from collections import Counter
-import math
 
 # data
 suits = ["Hearts", "Spades", "Diamonds", "Clubs"]  # suits

@@ -7,8 +7,5 @@ class Boss:
         self.max_hp  = 500
         self.name    = "Shadow Landlord"
 
-    def attack(self):
-        return random.randint(15, 45)
-
     def is_alive(self):
         return self.hp > 0
