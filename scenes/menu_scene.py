@@ -2,11 +2,12 @@
 import pygame
 import math
 import random
-from settings import W, H, BG_COLOUR
 
 class MenuScene:
-    def __init__(self, screen):
+    def __init__(self, screen, W, H):
         self.screen = screen
+        self.W = W
+        self.H = H
 
         # Fonts
         self.font_title  = pygame.font.SysFont("couriernew", 72, bold=True)
@@ -32,8 +33,8 @@ class MenuScene:
     def _new_particle(self):
         """A small drifting card-suit symbol in the background."""
         return {
-            "x":     random.randint(0, W),
-            "y":     random.randint(0, H),
+            "x":     random.randint(0, self.W),
+            "y":     random.randint(0, self.H),
             "speed": random.uniform(0.3, 1.2),
             "sym":   random.choice(["♥", "♦", "♠", "♣"]),
             "col":   random.choice([(180,30,60,80), (30,120,200,80)]),
@@ -57,24 +58,24 @@ class MenuScene:
 
         # Cyan ghost
         s1 = self.font_title.render(title, True, (0, 255, 220))
-        r1 = s1.get_rect(centerx=W//2 + offset, centery=H//2 - 120)
+        r1 = s1.get_rect(centerx=self.W//2 + offset, centery=self.H//2 - 120)
         s1.set_alpha(120)
         self.screen.blit(s1, r1)
 
         # Magenta ghost
         s2 = self.font_title.render(title, True, (255, 0, 120))
-        r2 = s2.get_rect(centerx=W//2 - offset, centery=H//2 - 120)
+        r2 = s2.get_rect(centerx=self.W//2 - offset, centery=self.H//2 - 120)
         s2.set_alpha(120)
         self.screen.blit(s2, r2)
 
         # Main white text
         s3 = self.font_title.render(title, True, (230, 225, 210))
-        r3 = s3.get_rect(centerx=W//2, centery=H//2 - 120)
+        r3 = s3.get_rect(centerx=self.W//2, centery=self.H//2 - 120)
         self.screen.blit(s3, r3)
 
         # Subtitle
         sub = self.font_sub.render(">> FIGHT THE LANDLORD  //  STEAMPUNK EDITION <<", True, (80, 180, 160))
-        self.screen.blit(sub, sub.get_rect(centerx=W//2, centery=H//2 - 60))
+        self.screen.blit(sub, sub.get_rect(centerx=self.W//2, centery=self.H//2 - 60))
 
     def _draw_button(self):
         hover = self.btn_hovered
@@ -114,8 +115,8 @@ class MenuScene:
 
     def _draw_scanlines(self):
         """Subtle horizontal scanline overlay for CRT feel."""
-        for y in range(0, H, 4):
-            pygame.draw.line(self.screen, (0, 0, 0), (0, y), (W, y))
+        for y in range(0, self.H, 4):
+            pygame.draw.line(self.screen, (0, 0, 0), (0, y), (self.W, y))
             # draw_line with alpha isn't straightforward in pygame,
             # so we use a pre-built surface instead — see __init__ tip below
 
@@ -128,7 +129,7 @@ class MenuScene:
             if self.btn_rect.collidepoint(event.pos):
                 # Import here to avoid circular imports at module level
                 from scenes.game_scene import GameScene
-                return GameScene(self.screen)   # signal scene change
+                return GameScene(self.screen, self.W, self.H)   # signal scene change
 
         return None   # stay on this scene
 

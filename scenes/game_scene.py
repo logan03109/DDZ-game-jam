@@ -1,6 +1,7 @@
 # scenes/game_scene.py
 import pygame
-from settings import W, H, suits, values
+import random
+from settings import suits, values
 from entities.player import Player, validate_set, damage_calc
 from entities.npc1 import Boss
 
@@ -36,8 +37,10 @@ DARK_RED    = (80,   15,  15)
 
 
 class GameScene:
-    def __init__(self, screen):
+    def __init__(self, screen, W, H):
         self.screen = screen
+        self.W = W
+        self.H = H
 
         # Fonts
         self.font_card_val  = pygame.font.SysFont("couriernew", 18, bold=True)
@@ -51,6 +54,7 @@ class GameScene:
         self.deck = Deck()
         self.deck.make_deck()
         self.player = Player(self.deck.deck)
+        self.player.hand.hand.sort(key=lambda card: card.numeric_rank())
         self.boss   = Boss()
 
         self.selected = set()   # indices into self.player.hand.hand
@@ -60,8 +64,18 @@ class GameScene:
 
         # Build button rects
         btn_w, btn_h = 180, 50
-        self.play_btn = pygame.Rect(W // 2 - btn_w // 2, H - 80, btn_w, btn_h)
+        self.play_btn = pygame.Rect(self.W // 2 - btn_w // 2, H - 80, btn_w, btn_h)
         self.play_hovered = False
+
+        self.play_btn = pygame.Rect(self.W // 2 - 90, self.H - 80, 180, 50)
+        self.sort_btn = pygame.Rect(self.W // 2 + 110, self.H - 80, 180, 50)
+        self.sort_hovered = False
+
+        btn_w, btn_h = 180, 50
+        self.play_btn = pygame.Rect(self.W // 2 - btn_w // 2, self.H - 80, btn_w, btn_h)
+        self.sort_btn = pygame.Rect(self.W // 2 + btn_w // 2 + 20, self.H - 80, btn_w, btn_h)
+        self.shuffle_btn = pygame.Rect(self.W // 2 - btn_w * 3 // 2 - 20, self.H - 80, btn_w, btn_h)
+        self.shuffle_hovered = False
 
         # Card rects — rebuilt every draw call
         self.card_rects = []
@@ -106,8 +120,8 @@ class GameScene:
     def _draw_hand(self):
         hand = self.player.hand.hand
         total_w = len(hand) * (CARD_W + CARD_GAP) - CARD_GAP
-        start_x = (W - total_w) // 2
-        base_y  = H - CARD_H - 100
+        start_x = (self.W - total_w) // 2
+        base_y  = self.H - CARD_H - 100
 
         self.card_rects = []
         for i, card in enumerate(hand):
@@ -123,10 +137,47 @@ class GameScene:
         txt = self.font_ui.render("[ PLAY ]", True, label_col)
         self.screen.blit(txt, txt.get_rect(center=self.play_btn.center))
 
+    def _sort_hand(self):
+        self.player.hand.hand.sort(key=lambda card: card.numeric_rank())
+        self.selected = set()  # clear selection since indices change after sort
+
+    def _draw_sort_button(self):
+        col = (10, 35, 70) if self.sort_hovered else (10, 20, 45)
+        pygame.draw.rect(self.screen, col, self.sort_btn, border_radius=8)
+        pygame.draw.rect(self.screen, (0, 120, 220), self.sort_btn, 2, border_radius=8)
+        label_col = (0, 180, 255) if self.sort_hovered else (100, 160, 210)
+        txt = self.font_ui.render("[ SORT ]", True, label_col)
+        self.screen.blit(txt, txt.get_rect(center=self.sort_btn.center))
+
+    def _draw_shuffle_button(self):
+        col = (45, 10, 60) if self.shuffle_hovered else (25, 5, 35)
+        pygame.draw.rect(self.screen, col, self.shuffle_btn, border_radius=8)
+        pygame.draw.rect(self.screen, (180, 0, 255), self.shuffle_btn, 2, border_radius=8)
+        label_col = (200, 80, 255) if self.shuffle_hovered else (140, 60, 200)
+        txt = self.font_ui.render("[ SHUFFLE ]", True, label_col)
+        self.screen.blit(txt, txt.get_rect(center=self.shuffle_btn.center))
+
+    def _shuffle_hand(self):
+        for card in self.player.hand.hand:
+            self.deck.pool.append(card)
+        self.player.hand.hand = []
+
+        self.deck.redeck()
+
+        for _ in range(20):
+            if self.deck.deck:
+                self.player.hand.hand.append(self.deck.deck.pop())
+            else:
+                break
+
+        self.selected = set()
+        self.message = "Hand reshuffled!"
+        self.msg_col = (200, 80, 255)
+
     def _draw_message(self):
         if self.message:
             txt = self.font_msg.render(self.message, True, self.msg_col)
-            self.screen.blit(txt, txt.get_rect(centerx=W // 2, centery=H - CARD_H - 140))
+            self.screen.blit(txt, txt.get_rect(centerx=self.W // 2, centery=self.H - CARD_H - 140))
 
     def _draw_info(self):
         """Top-left info panel — player HP and selected count."""
@@ -166,19 +217,26 @@ class GameScene:
         boss_dmg = self.boss.attack()
         self.player.hp -= boss_dmg
 
-        # Play the cards (remove from hand, add to pool)
+        # Discard played cards permanently — do NOT add to pool
         for card in cards:
             self.player.hand.hand.remove(card)
-            self.deck.pool.append(card)
 
-        # Refill hand
+        # Draw replacement cards from deck
         cards_used = len(cards)
         for _ in range(min(cards_used, len(self.deck.deck))):
             self.player.hand.hand.append(self.deck.deck.pop())
 
+        # Re-sort hand after drawing
+        self.player.hand.hand.sort(key=lambda card: card.numeric_rank())
+
         self.selected = set()
-        self.message  = f"{ddz_set.upper()}!  -{int(dmg)} to boss  -{boss_dmg} to you"
-        self.msg_col  = NEON_TEAL
+        self.message = f"{ddz_set.upper()}!  -{int(dmg)} to boss  -{boss_dmg} to you"
+        self.msg_col = NEON_TEAL
+
+        if self.boss.hp <= 0:
+            self.trigger_win = True
+        if self.player.hp <= 0:
+            self.trigger_lose = True
 
     # ── scene interface ───────────────────────────────────────
 
@@ -200,19 +258,41 @@ class GameScene:
                     else:
                         self.selected.add(i)
                     return None
+        if event.type == pygame.MOUSEMOTION:
+            self.play_hovered = self.play_btn.collidepoint(event.pos)
+            self.sort_hovered = self.sort_btn.collidepoint(event.pos)  # ADD
 
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self.play_btn.collidepoint(event.pos):
+                self._play_turn()
+                return None
+            if self.sort_btn.collidepoint(event.pos):  # ADD
+                self._sort_hand()  # ADD
+                return None
+        if event.type == pygame.MOUSEMOTION:
+            self.play_hovered = self.play_btn.collidepoint(event.pos)
+            self.sort_hovered = self.sort_btn.collidepoint(event.pos)
+            self.shuffle_hovered = self.shuffle_btn.collidepoint(event.pos)  # ADD
+
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self.play_btn.collidepoint(event.pos):
+                self._play_turn()
+                return None
+            if self.sort_btn.collidepoint(event.pos):
+                self._sort_hand()
+                return None
+            if self.shuffle_btn.collidepoint(event.pos):  # ADD
+                self._shuffle_hand()  # ADD
+                return None
         return None
 
     def update(self, dt):
-        # Scene transitions when someone dies
         if self.boss.hp <= 0:
-            self.message = "YOU WIN!"
-            self.msg_col = NEON_TEAL
-            # return WinScene(self.screen) once you build it
+            from scenes.win_scene import WinScene
+            return WinScene(self.screen, self.W, self.H)
         if self.player.hp <= 0:
             self.message = "YOU DIED"
-            self.msg_col = RED
-            # return LoseScene(self.screen) once you build it
+            self.msg_col = (210, 50, 50)
         return None
 
     def draw(self):
@@ -221,3 +301,5 @@ class GameScene:
         self._draw_hand()
         self._draw_message()
         self._draw_play_button()
+        self._draw_sort_button()
+        self._draw_shuffle_button()

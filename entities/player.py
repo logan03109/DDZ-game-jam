@@ -134,6 +134,9 @@ def validate_set(cards):  # you pick cards, and it finds if it is valid/what kin
     ranks = []
     suits_list = []
     for card in cards:
+        if card.suit == "Joker":  # ADD THIS CHECK FIRST
+            suits_list.append(card.suit)
+            continue
         if card.value == "J":
             ranks.append("11")
         elif card.value == "Q":
@@ -147,13 +150,21 @@ def validate_set(cards):  # you pick cards, and it finds if it is valid/what kin
         else:
             ranks.append(card.value)
         suits_list.append(card.suit)
-    ranks.sort()
+    ranks.sort(key=lambda x: int(x))
     count = Counter(ranks)
     valid = False
     ddz_set = None
-    if set(suits_list) == {"Joker"}:
+    if set(suits_list) == {"Joker"} and len(cards) == 2:
+        joker_values = sorted([card.value for card in cards])
+        if joker_values == ["Big", "Small"]:
+            valid = True
+            ddz_set = sets_list[11]
+    elif "Joker" in suits_list and len(cards) == 1:
         valid = True
-        ddz_set = sets_list[11]
+        ddz_set = sets_list[0]  # single
+    elif "Joker" in suits_list and len(cards) == 2:
+        valid = True
+        ddz_set = sets_list[1]  # double (two of same joker)
     elif "Joker" in suits_list:
         pass
     elif len(cards) >= 4 and len(list(count.values())) == 1:
@@ -232,7 +243,7 @@ def validate_set(cards):  # you pick cards, and it finds if it is valid/what kin
     return valid, ddz_set, cards
 
 def damage_calc(cards, ddz_set, damage_mult=1):
-    card_values = []
+    card_values = [card.numeric_rank() for card in cards]
     for card in cards:
         if card.value == "J":
             card_values.append(11)

@@ -1,4 +1,4 @@
-
+import pygame
 # data
 suits = ["Hearts", "Spades", "Diamonds", "Clubs"]  # suits
 values = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]  # values, excluding jokers
@@ -17,8 +17,6 @@ base_damage_constant = {"single": 1,
                         "triple+1_straight": 15.25,
                         "triple+2_straight": 15.5,
                         "jokerbomb": 25}  # damage multipler for each set - TEMPORARY
-
-W, H = 1280, 800
 FPS  = 60
 BG_COLOUR   = (15, 20, 40)
 CARD_WHITE  = (240, 235, 220)

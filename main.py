@@ -1,16 +1,18 @@
 # main.py
 import pygame
 import sys
-from settings import W, H, FPS
+from settings import FPS
 from scenes.menu_scene import MenuScene
 
 def main():
     pygame.init()
-    screen = pygame.display.set_mode((W, H))
+    info = pygame.display.Info()
+    W, H = info.current_w, info.current_h
+    screen = pygame.display.set_mode((W, H), pygame.FULLSCREEN)
     pygame.display.set_caption("Steampunk DDZ")
     clock = pygame.time.Clock()
 
-    current_scene = MenuScene(screen)
+    current_scene = MenuScene(screen, W, H)
 
     while True:
         dt = clock.tick(FPS)
@@ -18,12 +20,17 @@ def main():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:  # ESC exits fullscreen
+                    pygame.quit()
+                    sys.exit()
             result = current_scene.handle_event(event)
             if result:
                 current_scene = result
-        next_scene = current_scene.update(dt)
+
+        next_scene = current_scene.update(dt)  # capture this
         if next_scene:
-            current_scene = next_scene   # scene switching
+            current_scene = next_scene
 
         current_scene.draw()
         pygame.display.flip()
