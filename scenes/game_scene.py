@@ -107,7 +107,7 @@ class GameScene:
         self.NEXT_BOSS_DELAY = 90  # frames — roughly 1.5 seconds at 60fps
 
         pygame.mixer.init()
-        self.sound_card_pickup = pygame.mixer.Sound(resource_path("assets/audio/sfx/card_pickup.wav"))
+        self.sound_card_pickup = pygame.mixer.Sound(resource_path("assets/audio/sfx/pick up.wav"))
         self.sound_invalid = pygame.mixer.Sound(resource_path("assets/audio/sfx/invalid set.wav"))
 
         # Music
