@@ -449,19 +449,25 @@ class GameScene:
 
 
         # tutorial text
-        lines = [
-            f"You have {self.plays_remaining} plays this fight.",
-            f"You have {self.shuffles_remaining} shuffles this fight.",
-            f"Each shuffle redraws your entire hand.",
-            "",
-            "Select cards from your hand and press",
-            "PLAY to deal damage to the boss.",
-            "",
-            "Allowed sets this fight:",
-            *[f"  - {s}" for s in self.allowed_sets],
-            "",
-            "Defeat the boss before your plays run out!",
-        ]
+        if self.boss_index == 0:
+            lines = [
+                f"You have {self.plays_remaining} plays this fight.",
+                f"You have {self.shuffles_remaining} shuffles this fight.",
+                f"Each shuffle redraws your entire hand.",
+                "",
+                "Select cards from your hand and press",
+                "PLAY to deal damage to the boss.",
+                "",
+                "Allowed sets this fight:",
+                *[f"  - {s}" for s in self.allowed_sets],
+                "",
+                "Defeat the boss before your plays run out!",
+            ]
+        else:
+            lines = [
+                "Allowed sets this fight:",
+                *[f"  - {s}" for s in self.allowed_sets],
+            ]
 
         # Re-sizes the HOW TO PLAY box to fit the text
         max_width = 0
