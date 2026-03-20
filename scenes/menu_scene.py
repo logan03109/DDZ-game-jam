@@ -36,6 +36,8 @@ class MenuScene:
         self.glitch_on   = False
         self.particles   = [self._new_particle() for _ in range(60)]
 
+        self.settings_btn = pygame.Rect((self.W - btn_w) // 2, self.H // 2 + 220, btn_w, btn_h)
+        self.settings_hovered = False
     # ── helpers ───────────────────────────────────────────────
     def _new_particle(self):
         """A small drifting card-suit symbol in the background."""
@@ -141,19 +143,34 @@ class MenuScene:
         btn_w, btn_h = 240, 60
         self.btn_rect = pygame.Rect((self.W - btn_w) // 2, self.H // 2 + 60, btn_w, btn_h)
         self.exit_btn = pygame.Rect((self.W - btn_w) // 2, self.H // 2 + 140, btn_w, btn_h)
+        self.settings_btn = pygame.Rect((self.W - btn_w) // 2, self.H // 2 + 220, btn_w, btn_h)  # ADD
+
+    # new method
+    def _draw_settings_button(self):
+        col = (20, 20, 40) if self.settings_hovered else (10, 10, 20)
+        pygame.draw.rect(self.screen, col, self.settings_btn, border_radius=8)
+        pygame.draw.rect(self.screen, (100, 100, 160), self.settings_btn, 2, border_radius=8)
+        label_col = (180, 180, 220) if self.settings_hovered else (120, 120, 160)
+        txt = self.font_btn.render("[ SETTINGS ]", True, label_col)
+        self.screen.blit(txt, txt.get_rect(center=self.settings_btn.center))
     # ── scene interface ───────────────────────────────────────
     def handle_event(self, event):
         if event.type == pygame.MOUSEMOTION:
             self.btn_hovered = self.btn_rect.collidepoint(event.pos)
             self.exit_hovered = self.exit_btn.collidepoint(event.pos)
+            self.settings_hovered = self.settings_btn.collidepoint(event.pos)
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.btn_rect.collidepoint(event.pos):
                 from scenes.game_scene import GameScene
                 return GameScene(self.screen, self.W, self.H)
             if self.exit_btn.collidepoint(event.pos):
+                import sys
                 pygame.quit()
                 sys.exit()
+            if self.settings_btn.collidepoint(event.pos):  # must be inside here
+                from scenes.settings_scene import SettingsScene
+                return SettingsScene(self.screen, self.W, self.H, self)
 
         return None
 
@@ -174,3 +191,4 @@ class MenuScene:
         self._draw_title()
         self._draw_button()
         self._draw_exit_button()
+        self._draw_settings_button()

@@ -75,9 +75,8 @@ class NextBossScene:
 
             # play button — only works if gimmick selected
             if self.play_btn.collidepoint(event.pos) and self.selected_gimmick:
-                self.game_state.player.apply_gimmick(self.selected_gimmick)
+                self.game_state.player.apply_gimmick(self.selected_gimmick, self.game_state.deck)
                 return self.game_state
-
         return None
 
     def update(self, dt):

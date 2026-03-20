@@ -84,16 +84,23 @@ BOSS_CONFIGS = [
 ]
 
 
-gimmicks = ["damage_multiplier", "hand_size_up", "shuffle_size_up"]
+gimmicks = ["damage_multiplier", "hand_size_up", "shuffle_count_up"]
 
 GIMMICK_DESCRIPTIONS = {
     "damage_multiplier": "Multiply all damage dealt by 1.5x",
     "hand_size_up":      "Increase hand size by 3 cards",
-    "shuffle_size_up":   "Increase shuffle draw size by 3 cards",
+    "shuffle_count_up":  "Gain 2 extra shuffles",
 }
 
 GIMMICK_VALUES = {
     "damage_multiplier": 1.5,
     "hand_size_up":      3,
-    "shuffle_size_up":   3,
+    "shuffle_count_up":  2,
 }
+
+# Font sizes — increase these to scale all text up
+FONT_SIZE_SMALL  = 22
+FONT_SIZE_NORMAL = 24
+FONT_SIZE_UI     = 27
+FONT_SIZE_MSG    = 36
+FONT_SIZE_TITLE  = 60

@@ -15,6 +15,7 @@ class Player:
         self.active_gimmicks = []
         self.hand_size = hand_size
         self.shuffle_size = hand_size
+        self.bonus_shuffles = 0
 
     def pick_cards(
             self):  # i avoided doing this because this will certainly require pygame consideration, and is not useful for python console testing
@@ -44,14 +45,19 @@ class Player:
         else:
             return True
 
-    def apply_gimmick(self, gimmick):
+    def apply_gimmick(self, gimmick, deck=None):
         from settings import GIMMICK_VALUES
         if gimmick == "damage_multiplier":
             self.damage_mult += GIMMICK_VALUES["damage_multiplier"] - 1
         elif gimmick == "hand_size_up":
             self.hand_size += GIMMICK_VALUES["hand_size_up"]
-        elif gimmick == "shuffle_size_up":
-            self.shuffle_size += GIMMICK_VALUES["shuffle_size_up"]
+            if deck:
+                for _ in range(GIMMICK_VALUES["hand_size_up"]):
+                    if deck.deck:
+                        self.hand.hand.append(deck.deck.pop())
+                self.hand.hand.sort(key=lambda card: card.numeric_rank())
+        elif gimmick == "shuffle_count_up":
+            self.bonus_shuffles += GIMMICK_VALUES["shuffle_count_up"]
         self.active_gimmicks.append(gimmick)
 class Hand:
     def __init__(self):  # parent hand class - hand is cards in hand, sets is explained later
