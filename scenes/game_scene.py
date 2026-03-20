@@ -89,7 +89,7 @@ class GameScene:
 
         self.hand_scroll = 0  # number of cards to skip from the left
 
-        self.settings_btn = pygame.Rect(self.W - 120, 20, 100, 35)
+        self.settings_btn = pygame.Rect(self.W - 120, 20, 115, 35)
         self.settings_hovered = False
 
         self.player_sprite = self._make_placeholder(80, 120, (40, 180, 80))  # green
@@ -436,21 +436,6 @@ class GameScene:
         overlay.fill((0, 0, 0, 180))
         self.screen.blit(overlay, (0, 0))
 
-        # popup box
-        box_w, box_h = 500, 420
-        box_x = self.W // 2 - box_w // 2
-        box_y = self.H // 2 - box_h // 2
-        pygame.draw.rect(self.screen, (20, 25, 45), (box_x, box_y, box_w, box_h), border_radius=12)
-        pygame.draw.rect(self.screen, (0, 220, 180), (box_x, box_y, box_w, box_h), 2, border_radius=12)
-
-        # title
-        title = self.font_ui.render("HOW TO PLAY", True, (0, 220, 180))
-        self.screen.blit(title, title.get_rect(centerx=self.W // 2, top=box_y + 20))
-
-        # divider
-        pygame.draw.line(self.screen, (0, 220, 180),
-                         (box_x + 20, box_y + 55),
-                         (box_x + box_w - 20, box_y + 55), 1)
 
         # tutorial text
         lines = [
@@ -466,6 +451,33 @@ class GameScene:
             "",
             "Defeat the boss before your plays run out!",
         ]
+
+        # Re-sizes the HOW TO PLAY box to fit the text
+        max_width = 0
+        for line in lines:
+            line_w, line_h = self.font_small.size(line)
+            if line_w > max_width:
+                max_width = line_w
+
+        box_w = max_width + 60
+
+        box_h = 70 + (len(lines) * 22) + 80
+
+        box_x = (self.W - box_w) // 2
+        box_y = (self.H - box_h) // 2
+
+        self.tutorial_ok_btn = pygame.Rect(self.W // 2 - 50, box_y + box_h - 60, 100, 40)
+
+        pygame.draw.rect(self.screen, (20, 20, 25), (box_x,box_y, box_w, box_h), border_radius=12)
+        pygame.draw.rect(self.screen, (0, 220, 180), (box_x, box_y, box_w, box_h), 2, border_radius=12)
+
+        # title
+        title = self.font_ui.render("HOW TO PLAY", True, (0, 220, 180))
+        self.screen.blit(title, title.get_rect(centerx=self.W // 2, top=box_y + 20))
+        # divider
+        pygame.draw.line(self.screen, (0, 220, 180),
+                         (box_x + 20, box_y + 55),
+                         (box_x + box_w - 20, box_y + 55), 1)
 
         for i, line in enumerate(lines):
             col = (180, 180, 200) if not line.startswith("  -") else (0, 180, 140)
