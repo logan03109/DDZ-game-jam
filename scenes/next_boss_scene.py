@@ -67,10 +67,10 @@ class NextBossScene:
                     self.gimmick_hovered = g
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            # gimmick selection
             for g, rect in self.gimmick_btns:
                 if rect.collidepoint(event.pos):
-                    self.selected_gimmick = g
+                    if g not in self.game_state.player.active_gimmicks:  # ADD THIS CHECK
+                        self.selected_gimmick = g
                     return None
 
             # play button — only works if gimmick selected
@@ -110,6 +110,7 @@ class NextBossScene:
         for g, rect in self.gimmick_btns:
             is_selected = self.selected_gimmick == g
             is_hovered  = self.gimmick_hovered  == g
+            already_owned = g in self.game_state.player.active_gimmicks
 
             if is_selected:
                 bg_col     = (0, 60, 55)
@@ -124,14 +125,21 @@ class NextBossScene:
             pygame.draw.rect(self.screen, bg_col,     rect, border_radius=8)
             pygame.draw.rect(self.screen, border_col, rect, 2, border_radius=8)
 
+            name_col = (50, 50, 50) if already_owned else border_col
             name_s = self.font_gimmick.render(g.upper().replace("_", " "), True, border_col)
             self.screen.blit(name_s, name_s.get_rect(
                 centerx=rect.centerx, centery=rect.top + 25))
 
+            desc_col = (60, 60, 60) if already_owned else (160, 160, 180)
             desc_s = self.font_small.render(GIMMICK_DESCRIPTIONS[g], True, (160, 160, 180))
             desc_s = pygame.transform.scale(desc_s, (rect.w - 10, desc_s.get_height()))
             self.screen.blit(desc_s, desc_s.get_rect(
                 centerx=rect.centerx, centery=rect.top + 55))
+
+            if already_owned:  # ADD owned label
+                owned_s = self.font_small.render("OWNED", True, (80, 80, 80))
+                self.screen.blit(owned_s, owned_s.get_rect(
+                    centerx=rect.centerx, centery=rect.top + 65))
 
         # Play button — greyed out until gimmick chosen
         if self.selected_gimmick:
