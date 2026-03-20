@@ -100,6 +100,11 @@ class GameScene:
         self.show_tutorial = True  # shows on first load
         self.tutorial_ok_btn = pygame.Rect(self.W // 2 - 60, self.H // 2 + 180, 120, 45)
         self.tutorial_ok_hovered = False
+
+        self.pending_next_boss = False
+        self.pending_win = False
+        self.next_boss_timer = 0
+        self.NEXT_BOSS_DELAY = 90  # frames — roughly 1.5 seconds at 60fps
     # ── drawing helpers ───────────────────────────────────────
 
     def _draw_card(self, card, x, y, selected):
@@ -298,31 +303,34 @@ class GameScene:
 
     def _next_boss(self):
         self.boss_index += 1
-
         if self.boss_index >= len(BOSS_CONFIGS):
-            self.trigger_win = True
+            self.pending_win = True
+            self.next_boss_timer = self.NEXT_BOSS_DELAY
         else:
-            config = BOSS_CONFIGS[self.boss_index]
-            self.boss = Boss(config)
-            self.allowed_sets = config["allowed_sets"]
-            self.player_hand_size = config["hand_size"]
-            self.player.hand_size = config["hand_size"]
-            self.plays_remaining = config["max_plays"]
-            self.shuffles_remaining = config["max_shuffles"] + self.player.bonus_shuffles
+            # just set the timer — don't load next boss yet
+            self.pending_next_boss = True
+            self.next_boss_timer = self.NEXT_BOSS_DELAY
 
-            # reset deck to full 54 cards
-            self.deck = Deck()
-            self.deck.make_deck()
+    def _load_next_boss(self):
+        config = BOSS_CONFIGS[self.boss_index]
+        self.boss = Boss(config)
+        self.allowed_sets = config["allowed_sets"]
+        self.player_hand_size = config["hand_size"]
+        self.player.hand_size = config["hand_size"]
+        self.plays_remaining = config["max_plays"]
+        self.shuffles_remaining = config["max_shuffles"] + self.player.bonus_shuffles
 
-            # clear and redeal player hand
-            self.player.hand.hand = []
-            for _ in range(self.player.hand_size):
-                if self.deck.deck:
-                    self.player.hand.hand.append(self.deck.deck.pop())
+        self.deck = Deck()
+        self.deck.make_deck()
 
-            self.player.hand.hand.sort(key=lambda card: card.numeric_rank())
-            self.selected = set()
-            self.trigger_next_boss_scene = True
+        self.player.hand.hand = []
+        for _ in range(self.player.hand_size):
+            if self.deck.deck:
+                self.player.hand.hand.append(self.deck.deck.pop())
+
+        self.player.hand.hand.sort(key=lambda card: card.numeric_rank())
+        self.selected = set()
+        self.show_tutorial = True
 
     def _draw_sprites(self):
         hand_top = self.H - CARD_H - 100
@@ -551,15 +559,21 @@ class GameScene:
             return None
 
         return None
+
     def update(self, dt):
-        if self.trigger_win:
+        if self.next_boss_timer > 0:
+            self.next_boss_timer -= 1
+            return None
+
+        if self.pending_win:
             from scenes.win_scene import WinScene
             return WinScene(self.screen, self.W, self.H)
         if self.trigger_lose:
             from scenes.lose_scene import LoseScene
             return LoseScene(self.screen, self.W, self.H)
-        if self.trigger_next_boss_scene:
-            self.trigger_next_boss_scene = False
+        if self.pending_next_boss:
+            self.pending_next_boss = False
+            self._load_next_boss()
             from scenes.next_boss_scene import NextBossScene
             return NextBossScene(self.screen, self.W, self.H, self.boss_index, self)
         return None
