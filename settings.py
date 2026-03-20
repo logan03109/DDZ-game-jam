@@ -43,7 +43,7 @@ BOSS_CONFIGS = [
         "name": "Shadow Landlord",
         "hp": 100,
         "hand_size": 10,
-        "max_plays": 10,
+        "max_plays": 5,
         "max_shuffles": 3,
         "allowed_sets": [
             "single",
@@ -64,7 +64,7 @@ BOSS_CONFIGS = [
         "name": "Shadow Landlord II",
         "hp": 500,
         "hand_size": 20,
-        "max_plays": 10,
+        "max_plays": 5,
         "max_shuffles": 3,
         "allowed_sets": [
             "single",

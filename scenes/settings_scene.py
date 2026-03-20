@@ -4,6 +4,7 @@ import math
 import random
 
 class SettingsScene:
+    # noinspection PyPep8Naming
     def __init__(self, screen, W, H, previous_scene):
         self.screen          = screen
         self.W               = W
@@ -55,6 +56,7 @@ class SettingsScene:
         txt = self.font_btn.render(text, True, label_col)
         self.screen.blit(txt, txt.get_rect(center=rect.center))
 
+    # noinspection PyPep8Naming
     def on_resize(self, W, H):
         self.W = W
         self.H = H

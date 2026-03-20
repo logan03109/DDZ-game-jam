@@ -190,7 +190,7 @@ def validate_set(cards):  # you pick cards, and it finds if it is valid/what kin
     elif len(cards) == 5 and (list(count.values()) == [2, 3] or list(count.values()) == [3, 2]):
         valid = True
         ddz_set = sets_list[4]
-    elif len(cards) >= 5 and len(set(ranks)) == len(cards) and "15" not in ranks:
+    elif 5 <= len(cards) == len(set(ranks)) and "15" not in ranks:
         consecutive = True
         for idx in range(0, len(ranks) - 1):
             if int(ranks[idx]) != int(ranks[idx + 1]) - 1:
@@ -201,9 +201,9 @@ def validate_set(cards):  # you pick cards, and it finds if it is valid/what kin
             ddz_set = sets_list[6]
     elif len(cards) >= 6 and len(set(ranks)) == len(cards) // 2 and all(x == 2 for x in list(count.values())):
         consecutive = True
-        set_list = sorted(list(set(ranks)))
-        for idx in range(0, len(set_list) - 1):
-            if int(set_list[idx]) != int(set_list[idx + 1]) - 1:
+        unique_ranks = sorted(list(set(ranks)), key=lambda x: int(x))
+        for idx in range(0, len(unique_ranks) - 1):
+            if int(unique_ranks[idx]) + 1 != int(unique_ranks[idx + 1]):
                 consecutive = False
                 break
         if consecutive:
@@ -250,4 +250,15 @@ def validate_set(cards):  # you pick cards, and it finds if it is valid/what kin
 def damage_calc(cards, ddz_set, damage_mult=1):
     card_values = [card.numeric_rank() for card in cards]
     damage = max(card_values) * base_damage_constant[ddz_set] * damage_mult
+
+    if ddz_set == "single_straight":
+        extra_cards = len(cards) - 5
+        if extra_cards > 0:
+            bonus_multiplier = 1 + (extra_cards * 0.10)
+            damage *= bonus_multiplier
+
+    elif ddz_set == "double_straight":
+        extra_pairs = (len(cards) // 2) - 3
+        if extra_pairs > 0:
+            damage *= 1 + (extra_pairs * 0.15)
     return damage

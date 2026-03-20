@@ -2,9 +2,9 @@
 import pygame
 import math
 import random
-import sys
 
 class MenuScene:
+    # noinspection PyPep8Naming
     def __init__(self, screen, W, H):
         self.screen = screen
         self.W = W
@@ -110,6 +110,7 @@ class MenuScene:
 
         # Corner accents (cyberpunk detail)
         c = border_col
+        # noinspection PyPep8Naming
         L = 10
         for dx, dy, sx, sy in [(-1,-1,1,1),(1,-1,-1,1),(-1,1,1,-1),(1,1,-1,-1)]:
             cx = self.btn_rect.centerx + dx * self.btn_rect.w // 2
@@ -137,6 +138,7 @@ class MenuScene:
         txt = self.font_btn.render("[ EXIT ]", True, label_col)
         self.screen.blit(txt, txt.get_rect(center=self.exit_btn.center))
 
+    # noinspection PyPep8Naming
     def on_resize(self, W, H):
         self.W = W
         self.H = H
