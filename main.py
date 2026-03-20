@@ -7,8 +7,8 @@ from scenes.menu_scene import MenuScene
 def main():
     pygame.init()
     info = pygame.display.Info()
-    W, H = info.current_w, info.current_h
-    screen = pygame.display.set_mode((W, H), pygame.FULLSCREEN)
+    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN | pygame.RESIZABLE)
+    W, H = screen.get_size()
     pygame.display.set_caption("Steampunk DDZ")
     clock = pygame.time.Clock()
 
@@ -21,9 +21,11 @@ def main():
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:  # ESC exits fullscreen
-                    pygame.quit()
-                    sys.exit()
+                if event.key == pygame.K_ESCAPE:
+                    screen = pygame.display.set_mode((1280, 800), pygame.RESIZABLE)
+                    W, H = screen.get_size()
+                    if hasattr(current_scene, 'on_resize'):
+                        current_scene.on_resize(W, H)
             result = current_scene.handle_event(event)
             if result:
                 current_scene = result

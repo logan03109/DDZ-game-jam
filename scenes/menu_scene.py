@@ -135,6 +135,12 @@ class MenuScene:
         txt = self.font_btn.render("[ EXIT ]", True, label_col)
         self.screen.blit(txt, txt.get_rect(center=self.exit_btn.center))
 
+    def on_resize(self, W, H):
+        self.W = W
+        self.H = H
+        btn_w, btn_h = 240, 60
+        self.btn_rect = pygame.Rect((self.W - btn_w) // 2, self.H // 2 + 60, btn_w, btn_h)
+        self.exit_btn = pygame.Rect((self.W - btn_w) // 2, self.H // 2 + 140, btn_w, btn_h)
     # ── scene interface ───────────────────────────────────────
     def handle_event(self, event):
         if event.type == pygame.MOUSEMOTION:

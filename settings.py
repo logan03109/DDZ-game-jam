@@ -1,10 +1,9 @@
-import pygame
+
 # data
 suits = ["Hearts", "Spades", "Diamonds", "Clubs"]  # suits
 values = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]  # values, excluding jokers
 sets_list = ["single", "double", "triple", "triple+1", "triple+2", "bomb", "single_straight", "double_straight",
         "triple_straight", "triple+1_straight", "triple+2_straight", "jokerbomb"]  # every type of set
-gimmicks = ["bleed", "regen", "damage_reduction", "damage_multiplier"]  # gimmicks
 base_damage_constant = {"single": 1,
                         "double": 2,
                         "triple": 3,
@@ -44,7 +43,7 @@ BOSS_CONFIGS = [
         "name": "Shadow Landlord",
         "hp": 100,
         "hand_size": 10,
-        "max_plays": 3,
+        "max_plays": 10,
         "max_shuffles": 3,
         "allowed_sets": [
             "single",
@@ -65,7 +64,7 @@ BOSS_CONFIGS = [
         "name": "Shadow Landlord II",
         "hp": 500,
         "hand_size": 20,
-        "max_plays": 3,
+        "max_plays": 10,
         "max_shuffles": 3,
         "allowed_sets": [
             "single",
@@ -83,3 +82,18 @@ BOSS_CONFIGS = [
         ]
     },
 ]
+
+
+gimmicks = ["damage_multiplier", "hand_size_up", "shuffle_size_up"]
+
+GIMMICK_DESCRIPTIONS = {
+    "damage_multiplier": "Multiply all damage dealt by 1.5x",
+    "hand_size_up":      "Increase hand size by 3 cards",
+    "shuffle_size_up":   "Increase shuffle draw size by 3 cards",
+}
+
+GIMMICK_VALUES = {
+    "damage_multiplier": 1.5,
+    "hand_size_up":      3,
+    "shuffle_size_up":   3,
+}

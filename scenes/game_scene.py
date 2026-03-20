@@ -73,6 +73,7 @@ class GameScene:
         self.allowed_sets = BOSS_CONFIGS[self.boss_index]["allowed_sets"]
         self.player_hand_size = BOSS_CONFIGS[self.boss_index]["hand_size"]
         self.plays_remaining = BOSS_CONFIGS[self.boss_index]["max_plays"]
+        self.player = Player(self.deck.deck, self.player_hand_size)
         self.shuffles_remaining = BOSS_CONFIGS[self.boss_index]["max_shuffles"]
 
         self.plays_remaining = BOSS_CONFIGS[self.boss_index]["max_plays"]
@@ -81,6 +82,8 @@ class GameScene:
         self.trigger_next_boss_scene = False
 
         self.card_rects = []
+
+        self.hand_scroll = 0  # number of cards to skip from the left
 
     # ── drawing helpers ───────────────────────────────────────
 
@@ -121,15 +124,38 @@ class GameScene:
 
     def _draw_hand(self):
         hand = self.player.hand.hand
-        total_w = len(hand) * (CARD_W + CARD_GAP) - CARD_GAP
+
+        # how many cards fit on screen
+        max_visible = (self.W - 40) // (CARD_W + CARD_GAP)
+
+        # clamp scroll so it never goes out of bounds
+        self.hand_scroll = max(0, min(self.hand_scroll, len(hand) - max_visible))
+
+        visible_hand = hand[self.hand_scroll:self.hand_scroll + max_visible]
+
+        total_w = len(visible_hand) * (CARD_W + CARD_GAP) - CARD_GAP
         start_x = (self.W - total_w) // 2
-        base_y  = self.H - CARD_H - 100
+        base_y = self.H - CARD_H - 100
 
         self.card_rects = []
-        for i, card in enumerate(hand):
+        for i, card in enumerate(visible_hand):
+            actual_index = i + self.hand_scroll  # real index in full hand
             x = start_x + i * (CARD_W + CARD_GAP)
-            rect = self._draw_card(card, x, base_y, selected=(i in self.selected))
-            self.card_rects.append(rect)
+            rect = self._draw_card(card, x, base_y, selected=(actual_index in self.selected))
+            self.card_rects.append((actual_index, rect))  # store actual index with rect
+
+        # draw scroll arrows if needed
+        if self.hand_scroll > 0:
+            self._draw_scroll_arrow(left=True)
+        if self.hand_scroll + max_visible < len(hand):
+            self._draw_scroll_arrow(left=False)
+
+    def _draw_scroll_arrow(self, left):
+        x = 10 if left else self.W - 40
+        y = self.H - CARD_H - 60
+        col = (0, 220, 180)
+        txt = self.font_ui.render("<" if left else ">", True, col)
+        self.screen.blit(txt, (x, y))
 
     def _draw_play_button(self):
         col = DARK_TEAL if self.play_hovered else (10, 35, 32)
@@ -171,7 +197,7 @@ class GameScene:
 
         self.deck.redeck()
 
-        for _ in range(self.player_hand_size):
+        for _ in range(self.player.shuffle_size):
             if self.deck.deck:
                 self.player.hand.hand.append(self.deck.deck.pop())
             else:
@@ -238,6 +264,13 @@ class GameScene:
             self.shuffles_remaining = config["max_shuffles"]
             self.trigger_next_boss_scene = True
 
+    def on_resize(self, W, H):
+        self.W = W
+        self.H = H
+        btn_w, btn_h = 180, 50
+        self.play_btn = pygame.Rect(self.W // 2 - btn_w // 2, self.H - 80, btn_w, btn_h)
+        self.sort_btn = pygame.Rect(self.W // 2 + btn_w // 2 + 20, self.H - 80, btn_w, btn_h)
+        self.shuffle_btn = pygame.Rect(self.W // 2 - btn_w * 3 // 2 - 20, self.H - 80, btn_w, btn_h)
     # ── game logic ────────────────────────────────────────────
 
     def _play_turn(self):
@@ -262,6 +295,14 @@ class GameScene:
         dmg = damage_calc(cards, ddz_set, self.player.damage_mult)
         self.boss.hp -= int(dmg)
 
+        # apply bleed
+        if self.player.bleed > 0:
+            self.boss.hp -= self.player.bleed
+
+        # apply regen
+        if self.player.regen > 0:
+            self.player.hp = min(self.player.max_hp, self.player.hp + self.player.regen)
+
         for card in cards:
             self.player.hand.hand.remove(card)
 
@@ -284,11 +325,6 @@ class GameScene:
     # ── scene interface ───────────────────────────────────────
 
     def handle_event(self, event):
-        if event.type == pygame.MOUSEMOTION:
-            self.play_hovered = self.play_btn.collidepoint(event.pos)
-            self.sort_hovered = self.sort_btn.collidepoint(event.pos)
-            self.shuffle_hovered = self.shuffle_btn.collidepoint(event.pos)
-
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.play_btn.collidepoint(event.pos):
                 self._play_turn()
@@ -299,15 +335,31 @@ class GameScene:
             if self.shuffle_btn.collidepoint(event.pos):
                 self._shuffle_hand()
                 return None
-            for i, rect in enumerate(self.card_rects):
+
+            # scroll arrows
+            arrow_y = self.H - CARD_H - 60
+            left_arrow = pygame.Rect(10, arrow_y, 30, 40)
+            right_arrow = pygame.Rect(self.W - 40, arrow_y, 30, 40)
+            if left_arrow.collidepoint(event.pos):
+                self.hand_scroll -= 1
+                return None
+            if right_arrow.collidepoint(event.pos):
+                self.hand_scroll += 1
+                return None
+
+            # card selection — now uses actual_index stored in card_rects
+            for actual_index, rect in self.card_rects:
                 if rect.collidepoint(event.pos):
-                    if i in self.selected:
-                        self.selected.discard(i)
+                    if actual_index in self.selected:
+                        self.selected.discard(actual_index)
                     else:
-                        self.selected.add(i)
+                        self.selected.add(actual_index)
                     return None
 
-        return None
+        # mouse wheel scrolling
+        if event.type == pygame.MOUSEWHEEL:
+            self.hand_scroll -= event.y
+            return None
 
     def update(self, dt):
         if self.trigger_win:

@@ -3,17 +3,18 @@ from settings import *
 import random
 from collections import Counter
 class Player:
-    def __init__(self, deck):  # includes all attributes for a player
+    def __init__(self, deck, hand_size=20):  # includes all attributes for a player
         self.hp = 1000
         self.hand = PlayerHand()
-        self.hand.draw_hand(deck)
-        self.regen = 1
+        self.max_hp = 1000
+        self.hand.draw_hand(deck, hand_size)
+        self.regen = 0
         self.damage_mult = 1
-        self.gimmick_chance = {gimmicks[0]: [[suits[0], 0], [suits[1], 0], [suits[2], 0], [suits[3], 0]],
-                               gimmicks[1]: [[suits[0], 0], [suits[1], 0], [suits[2], 0], [suits[3], 0]],
-                               gimmicks[2]: [[suits[0], 0], [suits[1], 0], [suits[2], 0], [suits[3], 0]],
-                               gimmicks[3]: [[suits[0], 0], [suits[1], 0], [suits[2], 0], [suits[3],
-                                                                                           0]]}  # dictionary for every gimmick - each suit has a chance of turning into that gimmick, displayed in the 2d array
+        self.bleed = 0
+        self.damage_reduction = 0
+        self.active_gimmicks = []
+        self.hand_size = hand_size
+        self.shuffle_size = hand_size
 
     def pick_cards(
             self):  # i avoided doing this because this will certainly require pygame consideration, and is not useful for python console testing
@@ -43,6 +44,15 @@ class Player:
         else:
             return True
 
+    def apply_gimmick(self, gimmick):
+        from settings import GIMMICK_VALUES
+        if gimmick == "damage_multiplier":
+            self.damage_mult += GIMMICK_VALUES["damage_multiplier"] - 1
+        elif gimmick == "hand_size_up":
+            self.hand_size += GIMMICK_VALUES["hand_size_up"]
+        elif gimmick == "shuffle_size_up":
+            self.shuffle_size += GIMMICK_VALUES["shuffle_size_up"]
+        self.active_gimmicks.append(gimmick)
 class Hand:
     def __init__(self):  # parent hand class - hand is cards in hand, sets is explained later
         self.hand = []
@@ -60,11 +70,11 @@ class Hand:
             self.hand.append(deck.pop())
 
 class PlayerHand(Hand):
-    def __init__(self):  # inherits from hand, PLAYER
+    def __init__(self):
         super().__init__()
 
-    def draw_hand(self, deck):  # draws 20 at start
-        for n in range(PLAYER_HAND_SIZE):
+    def draw_hand(self, deck, size=20):
+        for n in range(size):
             self.hand.append(deck.pop())
 
 
