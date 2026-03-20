@@ -207,7 +207,7 @@ class GameScene:
 
         self.deck.redeck()
 
-        for _ in range(self.player.shuffle_size):
+        for _ in range(self.player.hand_size):
             if self.deck.deck:
                 self.player.hand.hand.append(self.deck.deck.pop())
             else:
@@ -289,7 +289,6 @@ class GameScene:
             self.allowed_sets = config["allowed_sets"]
             self.player_hand_size = config["hand_size"]
             self.player.hand_size = config["hand_size"]
-            self.player.shuffle_size = config["hand_size"]
             self.plays_remaining = config["max_plays"]
             self.shuffles_remaining = config["max_shuffles"] + self.player.bonus_shuffles
 

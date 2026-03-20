@@ -3,15 +3,16 @@ import pygame
 import math
 import random
 
+from settings import FONT_SIZE_TITLE, FONT_SIZE_NORMAL, FONT_SIZE_UI
 class WinScene:
     def __init__(self, screen, W, H):
         self.screen = screen
         self.W = W
         self.H = H
 
-        self.font_title = pygame.font.SysFont("couriernew", 80, bold=True)
-        self.font_sub   = pygame.font.SysFont("couriernew", 20)
-        self.font_btn   = pygame.font.SysFont("couriernew", 26, bold=True)
+        self.font_title = pygame.font.SysFont("couriernew", FONT_SIZE_TITLE, bold=True)
+        self.font_sub = pygame.font.SysFont("couriernew", FONT_SIZE_NORMAL)
+        self.font_btn = pygame.font.SysFont("couriernew", FONT_SIZE_UI, bold=True)
 
         btn_w, btn_h = 220, 55
         self.new_game_btn  = pygame.Rect(self.W // 2 - btn_w - 20, self.H // 2 + 80, btn_w, btn_h)

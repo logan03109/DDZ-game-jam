@@ -147,3 +147,18 @@ class NextBossScene:
         pygame.draw.rect(self.screen, border_col, self.play_btn, 2, border_radius=8)
         txt = self.font_btn.render("[ PLAY ]", True, label_col)
         self.screen.blit(txt, txt.get_rect(center=self.play_btn.center))
+
+    def on_resize(self, W, H):
+        self.W = W
+        self.H = H
+        g_btn_w, g_btn_h = 240, 80
+        total_w = len(gimmicks) * g_btn_w + (len(gimmicks) - 1) * 20
+        start_x = self.W // 2 - total_w // 2
+        self.gimmick_btns = []
+        for i, g in enumerate(gimmicks):
+            rect = pygame.Rect(start_x + i * (g_btn_w + 20),
+                               self.H // 2 + 20, g_btn_w, g_btn_h)
+            self.gimmick_btns.append((g, rect))
+        btn_w, btn_h = 220, 55
+        self.play_btn = pygame.Rect(self.W // 2 - btn_w // 2,
+                                    self.H // 2 + 140, btn_w, btn_h)

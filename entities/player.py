@@ -8,13 +8,9 @@ class Player:
         self.hand = PlayerHand()
         self.max_hp = 1000
         self.hand.draw_hand(deck, hand_size)
-        self.regen = 0
         self.damage_mult = 1
-        self.bleed = 0
-        self.damage_reduction = 0
         self.active_gimmicks = []
         self.hand_size = hand_size
-        self.shuffle_size = hand_size
         self.bonus_shuffles = 0
 
     def pick_cards(
@@ -220,31 +216,31 @@ def validate_set(cards):  # you pick cards, and it finds if it is valid/what kin
             if consecutive:
                 valid = True
                 ddz_set = sets_list[8]
-        else:
-            if len(cards) >= 8 and list(count.values()).count(3) == list(count.values()).count(1) and list(
-                    count.values()).count(3) + list(count.values()).count(1) == len(count):
-                consecutive = True
-                triples = [value for value, num in count.items() if num == 3]
-                set_list = sorted(list(set(ranks)))
-                for idx in range(0, len(triples) - 1):
-                    if int(triples[idx]) != int(triples[idx + 1]) - 1:
-                        consecutive = False
-                        break
-                if consecutive:
-                    valid = True
-                    ddz_set = sets_list[9]
-            elif len(cards) >= 10 and list(count.values()).count(3) == list(count.values()).count(2) and list(
-                    count.values()).count(3) + list(count.values()).count(2) == len(count):
-                consecutive = True
-                triples = [value for value, num in count.items() if num == 3]
-                unique_ranks = sorted(list(set(ranks)))
-                for idx in range(0, len(triples) - 1):
-                    if int(triples[idx]) != int(triples[idx + 1]) - 1:
-                        consecutive = False
-                        break
-                if consecutive:
-                    valid = True
-                    ddz_set = sets_list[10]
+    else:
+        if len(cards) >= 8 and list(count.values()).count(3) == list(count.values()).count(1) and list(
+                count.values()).count(3) + list(count.values()).count(1) == len(count):
+            consecutive = True
+            triples = [value for value, num in count.items() if num == 3]
+            set_list = sorted(list(set(ranks)), key=lambda x: int(x))
+            for idx in range(0, len(triples) - 1):
+                if int(triples[idx]) != int(triples[idx + 1]) - 1:
+                    consecutive = False
+                    break
+            if consecutive:
+                valid = True
+                ddz_set = sets_list[9]
+        elif len(cards) >= 10 and list(count.values()).count(3) == list(count.values()).count(2) and list(
+                count.values()).count(3) + list(count.values()).count(2) == len(count):
+            consecutive = True
+            triples = [value for value, num in count.items() if num == 3]
+            set_list = sorted(list(set(ranks)), key=lambda x: int(x))
+            for idx in range(0, len(triples) - 1):
+                if int(triples[idx]) != int(triples[idx + 1]) - 1:
+                    consecutive = False
+                    break
+            if consecutive:
+                valid = True
+                ddz_set = sets_list[10]
     return valid, ddz_set, cards
 
 def damage_calc(cards, ddz_set, damage_mult=1):

@@ -20,24 +20,6 @@ FPS  = 60
 BG_COLOUR   = (15, 20, 40)
 CARD_WHITE  = (240, 235, 220)
 
-PLAYER_HAND_SIZE  = 20
-BOSS_HAND_SIZE    = 17
-
-ALLOWED_SETS = [
-    "single",
-    "double",
-    "triple",
-    "triple+1",
-    "triple+2",
-    "bomb",
-    "single_straight",
-    "double_straight",
-    "triple_straight",
-    "triple+1_straight",
-    "triple+2_straight",
-    "jokerbomb"
-]
-
 BOSS_CONFIGS = [
     {
         "name": "Shadow Landlord",
@@ -52,6 +34,22 @@ BOSS_CONFIGS = [
     },
     {
         "name": "Shadow Landlord II",
+        "hp": 250,
+        "hand_size": 15,
+        "max_plays": 5,
+        "max_shuffles": 3,
+        "allowed_sets": [
+            "single",
+            "double",
+            "triple",
+            "triple+1",
+            "triple+2",
+            "single_straight",
+            "double_straight",
+        ]
+    },
+    {
+        "name": "Shadow Landlord III",
         "hp": 500,
         "hand_size": 20,
         "max_plays": 5,

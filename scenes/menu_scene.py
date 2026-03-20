@@ -17,14 +17,6 @@ class MenuScene:
 
         # Button
         btn_w, btn_h = 240, 60
-        self.btn_rect = pygame.Rect(
-            (W - btn_w) // 2,
-            H // 2 + 60,
-            btn_w, btn_h
-        )
-        self.btn_hovered = False
-
-        btn_w, btn_h = 240, 60
         self.btn_rect = pygame.Rect((self.W - btn_w) // 2, self.H // 2 + 60, btn_w, btn_h)
         self.exit_btn = pygame.Rect((self.W - btn_w) // 2, self.H // 2 + 140, btn_w, btn_h)
         self.btn_hovered = False
