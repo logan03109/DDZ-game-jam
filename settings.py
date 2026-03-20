@@ -23,3 +23,21 @@ CARD_WHITE  = (240, 235, 220)
 
 PLAYER_HAND_SIZE  = 20
 BOSS_HAND_SIZE    = 17
+
+MAX_PLAYS    = 3
+MAX_SHUFFLES = 3
+
+ALLOWED_SETS = [
+    "single",
+    "double",
+    "triple",
+    "triple+1",
+    "triple+2",
+    "bomb",
+    "single_straight",
+    "double_straight",
+    "triple_straight",
+    "triple+1_straight",
+    "triple+2_straight",
+    "jokerbomb"
+]

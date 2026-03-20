@@ -56,6 +56,7 @@ class GameScene:
 
         self.selected = set()   # indices into self.player.hand.hand
         self.trigger_win = False
+        self.trigger_lose = False
         self.message  = "Select cards and press PLAY"
         self.msg_col  = GREY
         self.msg_timer = 0      # how many frames to show message
@@ -75,8 +76,8 @@ class GameScene:
         self.shuffle_btn = pygame.Rect(self.W // 2 - btn_w * 3 // 2 - 20, self.H - 80, btn_w, btn_h)
         self.shuffle_hovered = False
 
-        self.plays_remaining = 3
-        self.shuffles_remaining = 3
+        self.plays_remaining = MAX_PLAYS
+        self.shuffles_remaining = MAX_SHUFFLES
 
         # Card rects — rebuilt every draw call
         self.card_rects = []
@@ -229,10 +230,6 @@ class GameScene:
     # ── game logic ────────────────────────────────────────────
 
     def _play_turn(self):
-        if self.plays_remaining <= 0:
-            self.message = "No plays remaining!"
-            self.msg_col = RED
-            return
         if not self.selected:
             self.message = "No cards selected!"
             self.msg_col = RED
@@ -243,6 +240,11 @@ class GameScene:
 
         if not valid:
             self.message = "INVALID SET"
+            self.msg_col = RED
+            return
+
+        if ddz_set not in ALLOWED_SETS:
+            self.message = f"{ddz_set.upper()} is not allowed!"
             self.msg_col = RED
             return
 
@@ -257,7 +259,10 @@ class GameScene:
 
         self.player.hand.hand.sort(key=lambda card: card.numeric_rank())
 
-        self.plays_remaining -= 1  # ADD
+        if self.plays_remaining == 1 and self.boss.hp > 0:
+            self.trigger_lose = True
+
+        self.plays_remaining -= 1
         self.selected = set()
         self.message = f"{ddz_set.upper()}!  -{int(dmg)} to boss  |  {self.plays_remaining} plays left"
         self.msg_col = NEON_TEAL
@@ -317,6 +322,9 @@ class GameScene:
         if self.trigger_win:
             from scenes.win_scene import WinScene
             return WinScene(self.screen, self.W, self.H)
+        if self.trigger_lose:
+            from scenes.lose_scene import LoseScene
+            return LoseScene(self.screen, self.W, self.H)
         return None
 
     def draw(self):
