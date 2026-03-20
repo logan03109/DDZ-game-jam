@@ -123,11 +123,14 @@ class GameScene:
         sym = SUIT_SYMBOLS.get(card.suit, "?")
 
         if card.suit == "Joker":
-            label = "BIG" if card.value == "Big" else "SML"
-            t1 = self.font_card_val.render(label, True, col)
-            t2 = self.font_card_sym.render(sym,   True, col)
+            label1 = "BIG" if card.value == "Big" else "SML"
+            label2 = "JKR"
+            t1 = self.font_card_val.render(label1, True, col)
+            t2 = self.font_card_val.render(label2, True, col)
+            t3 = self.font_card_sym.render(sym, True, col)
             self.screen.blit(t1, t1.get_rect(centerx=x + CARD_W // 2, top=draw_y + 8))
-            self.screen.blit(t2, t2.get_rect(centerx=x + CARD_W // 2, top=draw_y + 34))
+            self.screen.blit(t2, t2.get_rect(centerx=x + CARD_W // 2, top=draw_y + 28))
+            self.screen.blit(t3, t3.get_rect(centerx=x + CARD_W // 2, top=draw_y + 52))
         else:
             val_surf = self.font_card_val.render(card.value, True, col)
             sym_surf = self.font_card_sym.render(sym,        True, col)
