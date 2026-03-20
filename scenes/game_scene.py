@@ -68,13 +68,13 @@ class GameScene:
         self.sort_hovered = False
         self.shuffle_hovered = False
 
-        self.plays_remaining = MAX_PLAYS
-        self.shuffles_remaining = MAX_SHUFFLES
-
         self.boss_index = 0
         self.boss = Boss(BOSS_CONFIGS[self.boss_index])
         self.allowed_sets = BOSS_CONFIGS[self.boss_index]["allowed_sets"]
         self.player_hand_size = BOSS_CONFIGS[self.boss_index]["hand_size"]
+        self.plays_remaining = BOSS_CONFIGS[self.boss_index]["max_plays"]
+        self.shuffles_remaining = BOSS_CONFIGS[self.boss_index]["max_shuffles"]
+
         self.plays_remaining = BOSS_CONFIGS[self.boss_index]["max_plays"]
         self.shuffles_remaining = BOSS_CONFIGS[self.boss_index]["max_shuffles"]
 
