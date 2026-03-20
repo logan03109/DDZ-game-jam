@@ -73,6 +73,10 @@ class GameScene:
 
         self.boss_index = 0
         self.boss = Boss(BOSS_CONFIGS[self.boss_index])
+        self.allowed_sets = BOSS_CONFIGS[self.boss_index]["allowed_sets"]
+        self.player_hand_size = BOSS_CONFIGS[self.boss_index]["hand_size"]
+        self.plays_remaining = BOSS_CONFIGS[self.boss_index]["max_plays"]
+        self.shuffles_remaining = BOSS_CONFIGS[self.boss_index]["max_shuffles"]
 
         self.trigger_next_boss_scene = False
 
@@ -167,7 +171,7 @@ class GameScene:
 
         self.deck.redeck()
 
-        for _ in range(PLAYER_HAND_SIZE):
+        for _ in range(self.player_hand_size):
             if self.deck.deck:
                 self.player.hand.hand.append(self.deck.deck.pop())
             else:
@@ -226,7 +230,12 @@ class GameScene:
         if self.boss_index >= len(BOSS_CONFIGS):
             self.trigger_win = True
         else:
-            self.boss = Boss(BOSS_CONFIGS[self.boss_index])
+            config = BOSS_CONFIGS[self.boss_index]
+            self.boss = Boss(config)
+            self.allowed_sets = config["allowed_sets"]
+            self.player_hand_size = config["hand_size"]
+            self.plays_remaining = config["max_plays"]
+            self.shuffles_remaining = config["max_shuffles"]
             self.trigger_next_boss_scene = True
 
     # ── game logic ────────────────────────────────────────────
@@ -245,7 +254,7 @@ class GameScene:
             self.msg_col = RED
             return
 
-        if ddz_set not in ALLOWED_SETS:
+        if ddz_set not in self.allowed_sets:
             self.message = f"{ddz_set.upper()} is not allowed!"
             self.msg_col = RED
             return

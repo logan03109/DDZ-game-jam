@@ -24,9 +24,6 @@ CARD_WHITE  = (240, 235, 220)
 PLAYER_HAND_SIZE  = 20
 BOSS_HAND_SIZE    = 17
 
-MAX_PLAYS    = 3
-MAX_SHUFFLES = 3
-
 ALLOWED_SETS = [
     "single",
     "double",
@@ -43,6 +40,46 @@ ALLOWED_SETS = [
 ]
 
 BOSS_CONFIGS = [
-    {"name": "Shadow Landlord", "hp": 500},
-    {"name": "Shadow Landlord II", "hp": 500},
+    {
+        "name": "Shadow Landlord",
+        "hp": 100,
+        "hand_size": 10,
+        "max_plays": 3,
+        "max_shuffles": 3,
+        "allowed_sets": [
+            "single",
+            "double",
+            "triple",
+            "triple+1",
+            "triple+2",
+            "bomb",
+            "single_straight",
+            "double_straight",
+            "triple_straight",
+            "triple+1_straight",
+            "triple+2_straight",
+            "jokerbomb"
+        ]
+    },
+    {
+        "name": "Shadow Landlord II",
+        "hp": 500,
+        "hand_size": 20,
+        "max_plays": 3,
+        "max_shuffles": 3,
+        "allowed_sets": [
+            "single",
+            "double",
+            "triple",
+            "triple+1",
+            "triple+2",
+            "bomb",
+            "single_straight",
+            "double_straight",
+            "triple_straight",
+            "triple+1_straight",
+            "triple+2_straight",
+            "jokerbomb"
+        ]
+    },
 ]
