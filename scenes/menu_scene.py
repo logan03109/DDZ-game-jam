@@ -2,7 +2,7 @@
 import pygame
 import math
 import random
-
+from settings import *
 class MenuScene:
     # noinspection PyPep8Naming
     def __init__(self, screen, W, H):
@@ -32,7 +32,7 @@ class MenuScene:
         self.settings_hovered = False
 
         # Music
-        pygame.mixer.music.load("assets/audio/music/Main Menu GDLTDDZ.wav")
+        pygame.mixer.music.load(resource_path("assets/audio/music/Main Menu GDLTDDZ.wav"))
         pygame.mixer.music.set_volume(0.5)
         pygame.mixer.music.play(-1)  # -1 loops forever
     # ── helpers ───────────────────────────────────────────────

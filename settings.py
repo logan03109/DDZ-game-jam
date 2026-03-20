@@ -1,4 +1,10 @@
-import random
+import sys
+import os
+
+def resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
 # data
 suits = ["Hearts", "Spades", "Diamonds", "Clubs"]  # suits
 values = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]  # values, excluding jokers
