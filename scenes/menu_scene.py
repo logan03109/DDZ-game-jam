@@ -2,6 +2,7 @@
 import pygame
 import math
 import random
+import sys
 
 class MenuScene:
     def __init__(self, screen, W, H):
@@ -22,6 +23,12 @@ class MenuScene:
             btn_w, btn_h
         )
         self.btn_hovered = False
+
+        btn_w, btn_h = 240, 60
+        self.btn_rect = pygame.Rect((self.W - btn_w) // 2, self.H // 2 + 60, btn_w, btn_h)
+        self.exit_btn = pygame.Rect((self.W - btn_w) // 2, self.H // 2 + 140, btn_w, btn_h)
+        self.btn_hovered = False
+        self.exit_hovered = False
 
         # Animation state
         self.tick        = 0          # frame counter for animations
@@ -120,18 +127,29 @@ class MenuScene:
             # draw_line with alpha isn't straightforward in pygame,
             # so we use a pre-built surface instead — see __init__ tip below
 
+    def _draw_exit_button(self):
+        col = (60, 10, 10) if self.exit_hovered else (30, 5, 5)
+        pygame.draw.rect(self.screen, col, self.exit_btn, border_radius=8)
+        pygame.draw.rect(self.screen, (200, 40, 40), self.exit_btn, 2, border_radius=8)
+        label_col = (220, 60, 60) if self.exit_hovered else (160, 40, 40)
+        txt = self.font_btn.render("[ EXIT ]", True, label_col)
+        self.screen.blit(txt, txt.get_rect(center=self.exit_btn.center))
+
     # ── scene interface ───────────────────────────────────────
     def handle_event(self, event):
         if event.type == pygame.MOUSEMOTION:
             self.btn_hovered = self.btn_rect.collidepoint(event.pos)
+            self.exit_hovered = self.exit_btn.collidepoint(event.pos)
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.btn_rect.collidepoint(event.pos):
-                # Import here to avoid circular imports at module level
                 from scenes.game_scene import GameScene
-                return GameScene(self.screen, self.W, self.H)   # signal scene change
+                return GameScene(self.screen, self.W, self.H)
+            if self.exit_btn.collidepoint(event.pos):
+                pygame.quit()
+                sys.exit()
 
-        return None   # stay on this scene
+        return None
 
     def update(self, dt):
         self.tick += 1
@@ -149,3 +167,4 @@ class MenuScene:
         self._draw_particles()
         self._draw_title()
         self._draw_button()
+        self._draw_exit_button()

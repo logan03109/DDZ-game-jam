@@ -1,7 +1,8 @@
 # scenes/game_scene.py
-from entities.player import Player, validate_set, damage_calc
+from entities.player import Player, validate_set, Deck, damage_calc
 from entities.npc1 import Boss
 from settings import *
+import pygame
 # Card dimensions
 CARD_W = 72
 CARD_H = 100
@@ -47,12 +48,10 @@ class GameScene:
         self.font_small     = pygame.font.SysFont("couriernew", 14)
 
         # Game state
-        from entities.player import Deck   # import here to keep it tidy
         self.deck = Deck()
         self.deck.make_deck()
         self.player = Player(self.deck.deck)
         self.player.hand.hand.sort(key=lambda card: card.numeric_rank())
-        self.boss   = Boss()
 
         self.selected = set()   # indices into self.player.hand.hand
         self.trigger_win = False
@@ -61,25 +60,22 @@ class GameScene:
         self.msg_col  = GREY
         self.msg_timer = 0      # how many frames to show message
 
-        # Build button rects
-        btn_w, btn_h = 180, 50
-        self.play_btn = pygame.Rect(self.W // 2 - btn_w // 2, H - 80, btn_w, btn_h)
-        self.play_hovered = False
-
-        self.play_btn = pygame.Rect(self.W // 2 - 90, self.H - 80, 180, 50)
-        self.sort_btn = pygame.Rect(self.W // 2 + 110, self.H - 80, 180, 50)
-        self.sort_hovered = False
-
         btn_w, btn_h = 180, 50
         self.play_btn = pygame.Rect(self.W // 2 - btn_w // 2, self.H - 80, btn_w, btn_h)
         self.sort_btn = pygame.Rect(self.W // 2 + btn_w // 2 + 20, self.H - 80, btn_w, btn_h)
         self.shuffle_btn = pygame.Rect(self.W // 2 - btn_w * 3 // 2 - 20, self.H - 80, btn_w, btn_h)
+        self.play_hovered = False
+        self.sort_hovered = False
         self.shuffle_hovered = False
 
         self.plays_remaining = MAX_PLAYS
         self.shuffles_remaining = MAX_SHUFFLES
 
-        # Card rects — rebuilt every draw call
+        self.boss_index = 0
+        self.boss = Boss(BOSS_CONFIGS[self.boss_index])
+
+        self.trigger_next_boss_scene = False
+
         self.card_rects = []
 
     # ── drawing helpers ───────────────────────────────────────
@@ -225,7 +221,13 @@ class GameScene:
         shuffles_surf = self.font_small.render(f"SHUFFLES LEFT: {self.shuffles_remaining}", True, (200, 80, 255))
         self.screen.blit(shuffles_surf, shuffles_surf.get_rect(topleft=(20, 100)))
 
-        # Border
+    def _next_boss(self):
+        self.boss_index += 1
+        if self.boss_index >= len(BOSS_CONFIGS):
+            self.trigger_win = True
+        else:
+            self.boss = Boss(BOSS_CONFIGS[self.boss_index])
+            self.trigger_next_boss_scene = True
 
     # ── game logic ────────────────────────────────────────────
 
@@ -268,43 +270,15 @@ class GameScene:
         self.msg_col = NEON_TEAL
 
         if self.boss.hp <= 0:
-            self.trigger_win = True
+            self._next_boss()
 
     # ── scene interface ───────────────────────────────────────
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEMOTION:
             self.play_hovered = self.play_btn.collidepoint(event.pos)
-
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            # Play button
-            if self.play_btn.collidepoint(event.pos):
-                self._play_turn()
-                return None
-
-            # Card selection
-            for i, rect in enumerate(self.card_rects):
-                if rect.collidepoint(event.pos):
-                    if i in self.selected:
-                        self.selected.discard(i)
-                    else:
-                        self.selected.add(i)
-                    return None
-        if event.type == pygame.MOUSEMOTION:
-            self.play_hovered = self.play_btn.collidepoint(event.pos)
-            self.sort_hovered = self.sort_btn.collidepoint(event.pos)  # ADD
-
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            if self.play_btn.collidepoint(event.pos):
-                self._play_turn()
-                return None
-            if self.sort_btn.collidepoint(event.pos):  # ADD
-                self._sort_hand()  # ADD
-                return None
-        if event.type == pygame.MOUSEMOTION:
-            self.play_hovered = self.play_btn.collidepoint(event.pos)
             self.sort_hovered = self.sort_btn.collidepoint(event.pos)
-            self.shuffle_hovered = self.shuffle_btn.collidepoint(event.pos)  # ADD
+            self.shuffle_hovered = self.shuffle_btn.collidepoint(event.pos)
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.play_btn.collidepoint(event.pos):
@@ -313,9 +287,17 @@ class GameScene:
             if self.sort_btn.collidepoint(event.pos):
                 self._sort_hand()
                 return None
-            if self.shuffle_btn.collidepoint(event.pos):  # ADD
-                self._shuffle_hand()  # ADD
+            if self.shuffle_btn.collidepoint(event.pos):
+                self._shuffle_hand()
                 return None
+            for i, rect in enumerate(self.card_rects):
+                if rect.collidepoint(event.pos):
+                    if i in self.selected:
+                        self.selected.discard(i)
+                    else:
+                        self.selected.add(i)
+                    return None
+
         return None
 
     def update(self, dt):
@@ -325,6 +307,10 @@ class GameScene:
         if self.trigger_lose:
             from scenes.lose_scene import LoseScene
             return LoseScene(self.screen, self.W, self.H)
+        if self.trigger_next_boss_scene:
+            self.trigger_next_boss_scene = False
+            from scenes.next_boss_scene import NextBossScene
+            return NextBossScene(self.screen, self.W, self.H, self.boss_index, self)
         return None
 
     def draw(self):

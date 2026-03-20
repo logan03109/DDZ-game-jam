@@ -41,3 +41,8 @@ ALLOWED_SETS = [
     "triple+2_straight",
     "jokerbomb"
 ]
+
+BOSS_CONFIGS = [
+    {"name": "Shadow Landlord", "hp": 500},
+    {"name": "Shadow Landlord II", "hp": 500},
+]
