@@ -220,8 +220,23 @@ class GameScene:
 
     def _draw_message(self):
         if self.message:
-            txt = self.font_msg.render(self.message, True, self.msg_col)
-            self.screen.blit(txt, txt.get_rect(centerx=self.W // 2, centery=self.H - CARD_H - 140))
+            # split into two lines if too long
+            parts = self.message.split("  |  ")
+            if len(parts) == 2:
+                line1 = parts[0]
+                line2 = f"| {parts[1]}"
+            else:
+                line1 = self.message
+                line2 = None
+
+            txt1 = self.font_msg.render(line1, True, self.msg_col)
+            self.screen.blit(txt1, txt1.get_rect(
+                centerx=self.W // 2, centery=self.H - CARD_H - 180))
+
+            if line2:
+                txt2 = self.font_msg.render(line2, True, self.msg_col)
+                self.screen.blit(txt2, txt2.get_rect(
+                    centerx=self.W // 2, centery=self.H - CARD_H - 140))
 
     def _draw_info(self):
         # Card counter — top left
@@ -369,11 +384,25 @@ class GameScene:
             self.msg_col = RED
             return
 
-        dmg = damage_calc(cards, ddz_set, self.player.damage_mult)
+        has_gambling = "damage_multiplier" in self.player.active_gimmicks
+        dmg, roll = damage_calc(cards, ddz_set, self.player.damage_mult, has_gambling)
         self.boss.hp -= int(dmg)
+
+        highest = max(card.numeric_rank() for card in cards)
+        base = base_damage_constant[ddz_set]
+        mult = self.player.damage_mult
+
+        if roll is not None:
+            calc_str = f"{highest} x {base} x {round(roll, 1)} = {int(dmg)}"
+        elif mult != 1:
+            calc_str = f"{highest} x {base} x {round(mult, 2)} = {int(dmg)}"
+        else:
+            calc_str = f"{highest} x {base} = {int(dmg)}"
+
+        self.message = f"{ddz_set.upper()}!  {calc_str}  |  {self.plays_remaining - 1} plays left"
+        self.msg_col = NEON_TEAL
         for card in cards:
             self.player.hand.hand.remove(card)
-
         # refill hand up to current hand size
         cards_to_draw = self.player.hand_size - len(self.player.hand.hand)
         for _ in range(min(cards_to_draw, len(self.deck.deck))):
@@ -386,8 +415,6 @@ class GameScene:
 
         self.plays_remaining -= 1
         self.selected = set()
-        self.message = f"{ddz_set.upper()}!  -{int(dmg)} to boss  |  {self.plays_remaining} plays left"
-        self.msg_col = NEON_TEAL
 
         if self.boss.hp <= 0:
             self._next_boss()

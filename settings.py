@@ -1,4 +1,4 @@
-
+import random
 # data
 suits = ["Hearts", "Spades", "Diamonds", "Clubs"]  # suits
 values = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]  # values, excluding jokers
@@ -75,13 +75,11 @@ BOSS_CONFIGS = [
 gimmicks = ["damage_multiplier", "hand_size_up", "shuffle_count_up"]
 
 GIMMICK_DESCRIPTIONS = {
-    "damage_multiplier": "Multiply all damage dealt by 1.5x",
+    "damage_multiplier": "Gamble! Multiply damage by 0.7x to 1.5x",
     "hand_size_up":      "Increase hand size by 3 cards",
     "shuffle_count_up":  "Gain 2 extra shuffles",
 }
-
 GIMMICK_VALUES = {
-    "damage_multiplier": 1.5,
     "hand_size_up":      3,
     "shuffle_count_up":  2,
 }

@@ -22,11 +22,13 @@ class SettingsScene:
         self.windowed_btn = pygame.Rect(self.W // 2 - btn_w // 2, self.H // 2 - 60,  btn_w, btn_h)
         self.menu_btn     = pygame.Rect(self.W // 2 - btn_w // 2, self.H // 2 + 20,  btn_w, btn_h)
         self.exit_btn     = pygame.Rect(self.W // 2 - btn_w // 2, self.H // 2 + 100, btn_w, btn_h)
+        self.return_btn = pygame.Rect(self.W // 2 - btn_w // 2, self.H // 2 - 140, btn_w, btn_h)
 
         self.windowed_hovered = False
         self.menu_hovered     = False
         self.exit_hovered     = False
         self.request_windowed = False
+        self.return_hovered = False
 
     def _new_particle(self):
         return {
@@ -64,16 +66,19 @@ class SettingsScene:
         self.windowed_btn = pygame.Rect(self.W // 2 - btn_w // 2, self.H // 2 - 60,  btn_w, btn_h)
         self.menu_btn     = pygame.Rect(self.W // 2 - btn_w // 2, self.H // 2 + 20,  btn_w, btn_h)
         self.exit_btn     = pygame.Rect(self.W // 2 - btn_w // 2, self.H // 2 + 100, btn_w, btn_h)
+        self.return_btn = pygame.Rect(self.W // 2 - btn_w // 2, self.H // 2 - 140, btn_w, btn_h)
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEMOTION:
+            self.return_hovered = self.return_btn.collidepoint(event.pos)
             self.windowed_hovered = self.windowed_btn.collidepoint(event.pos)
-            self.menu_hovered     = self.menu_btn.collidepoint(event.pos)
-            self.exit_hovered     = self.exit_btn.collidepoint(event.pos)
+            self.menu_hovered = self.menu_btn.collidepoint(event.pos)
+            self.exit_hovered = self.exit_btn.collidepoint(event.pos)
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self.return_btn.collidepoint(event.pos):
+                return self.previous_scene  # return to whatever scene opened settings
             if self.windowed_btn.collidepoint(event.pos):
-                # signal main.py to switch to windowed
                 self.request_windowed = True
                 return None
             if self.menu_btn.collidepoint(event.pos):
@@ -94,18 +99,18 @@ class SettingsScene:
         self.screen.fill((8, 10, 20))
         self._draw_particles()
 
-        # Title
         title = self.font_title.render("SETTINGS", True, (180, 180, 220))
-        self.screen.blit(title, title.get_rect(centerx=self.W // 2, centery=self.H // 2 - 160))
+        self.screen.blit(title, title.get_rect(centerx=self.W // 2, centery=self.H // 2 - 220))
 
-        # Divider
         pygame.draw.line(self.screen, (50, 50, 80),
-                         (self.W // 2 - 200, self.H // 2 - 100),
-                         (self.W // 2 + 200, self.H // 2 - 100), 1)
+                         (self.W // 2 - 200, self.H // 2 - 170),
+                         (self.W // 2 + 200, self.H // 2 - 170), 1)
 
+        self._draw_button(self.return_btn, "[ RETURN TO GAME ]",
+                          self.return_hovered, (0, 220, 180), (0, 60, 55))
         self._draw_button(self.windowed_btn, "[ BORDERLESS WINDOW ]",
-                          self.windowed_hovered, (0, 180, 220),  (0, 50, 70))
-        self._draw_button(self.menu_btn,     "[ MAIN MENU ]",
-                          self.menu_hovered,     (220, 175, 50), (60, 45, 0))
-        self._draw_button(self.exit_btn,     "[ EXIT ]",
-                          self.exit_hovered,     (210, 50, 50),  (60, 10, 10))
+                          self.windowed_hovered, (0, 180, 220), (0, 50, 70))
+        self._draw_button(self.menu_btn, "[ MAIN MENU ]",
+                          self.menu_hovered, (220, 175, 50), (60, 45, 0))
+        self._draw_button(self.exit_btn, "[ EXIT ]",
+                          self.exit_hovered, (210, 50, 50), (60, 10, 10))

@@ -44,7 +44,7 @@ class Player:
     def apply_gimmick(self, gimmick, deck=None):
         from settings import GIMMICK_VALUES
         if gimmick == "damage_multiplier":
-            self.damage_mult += GIMMICK_VALUES["damage_multiplier"] - 1
+            pass  # effect applied per play in damage_calc
         elif gimmick == "hand_size_up":
             self.hand_size += GIMMICK_VALUES["hand_size_up"]
             if deck:
@@ -54,7 +54,7 @@ class Player:
                 self.hand.hand.sort(key=lambda card: card.numeric_rank())
         elif gimmick == "shuffle_count_up":
             self.bonus_shuffles += GIMMICK_VALUES["shuffle_count_up"]
-        self.active_gimmicks.append(gimmick)
+        self.active_gimmicks.append(gimmick)  # this line must always run
 class Hand:
     def __init__(self):  # parent hand class - hand is cards in hand, sets is explained later
         self.hand = []
@@ -208,7 +208,7 @@ def validate_set(cards):  # you pick cards, and it finds if it is valid/what kin
     elif len(cards) >= 6:
         if len(set(ranks)) == len(cards) // 3:
             consecutive = True
-            set_list = sorted(list(set(ranks)))
+            set_list = sorted(list(set(ranks)), key=lambda x: int(x))
             for idx in range(0, len(set_list) - 1):
                 if int(set_list[idx]) != int(set_list[idx + 1]) - 1:
                     consecutive = False
@@ -243,18 +243,22 @@ def validate_set(cards):  # you pick cards, and it finds if it is valid/what kin
                 ddz_set = sets_list[10]
     return valid, ddz_set, cards
 
-def damage_calc(cards, ddz_set, damage_mult=1):
+def damage_calc(cards, ddz_set, damage_mult=1, has_gambling=False):
     card_values = [card.numeric_rank() for card in cards]
     damage = max(card_values) * base_damage_constant[ddz_set] * damage_mult
+
+    roll = None
+    if has_gambling:
+        roll = random.randint(7, 15) / 10
+        damage *= roll
 
     if ddz_set == "single_straight":
         extra_cards = len(cards) - 5
         if extra_cards > 0:
-            bonus_multiplier = 1 + (extra_cards * 0.10)
-            damage *= bonus_multiplier
-
+            damage *= 1 + (extra_cards * 0.10)
     elif ddz_set == "double_straight":
         extra_pairs = (len(cards) // 2) - 3
         if extra_pairs > 0:
             damage *= 1 + (extra_pairs * 0.15)
-    return damage
+
+    return damage, roll
