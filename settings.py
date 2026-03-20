@@ -47,17 +47,7 @@ BOSS_CONFIGS = [
         "max_shuffles": 3,
         "allowed_sets": [
             "single",
-            "double",
-            "triple",
-            "triple+1",
-            "triple+2",
-            "bomb",
-            "single_straight",
-            "double_straight",
-            "triple_straight",
-            "triple+1_straight",
-            "triple+2_straight",
-            "jokerbomb"
+            "double"
         ]
     },
     {
