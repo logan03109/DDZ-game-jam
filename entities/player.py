@@ -216,12 +216,10 @@ def validate_set(cards):  # you pick cards, and it finds if it is valid/what kin
             if consecutive:
                 valid = True
                 ddz_set = sets_list[8]
-    else:
-        if len(cards) >= 8 and list(count.values()).count(3) == list(count.values()).count(1) and list(
+        elif len(cards) >= 8 and list(count.values()).count(3) == list(count.values()).count(1) and list(
                 count.values()).count(3) + list(count.values()).count(1) == len(count):
             consecutive = True
-            triples = [value for value, num in count.items() if num == 3]
-            set_list = sorted(list(set(ranks)), key=lambda x: int(x))
+            triples = sorted([value for value, num in count.items() if num == 3], key=lambda x: int(x))
             for idx in range(0, len(triples) - 1):
                 if int(triples[idx]) != int(triples[idx + 1]) - 1:
                     consecutive = False
@@ -232,8 +230,7 @@ def validate_set(cards):  # you pick cards, and it finds if it is valid/what kin
         elif len(cards) >= 10 and list(count.values()).count(3) == list(count.values()).count(2) and list(
                 count.values()).count(3) + list(count.values()).count(2) == len(count):
             consecutive = True
-            triples = [value for value, num in count.items() if num == 3]
-            set_list = sorted(list(set(ranks)), key=lambda x: int(x))
+            triples = sorted([value for value, num in count.items() if num == 3], key=lambda x: int(x))
             for idx in range(0, len(triples) - 1):
                 if int(triples[idx]) != int(triples[idx + 1]) - 1:
                     consecutive = False
