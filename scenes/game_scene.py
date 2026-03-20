@@ -105,6 +105,10 @@ class GameScene:
         self.pending_win = False
         self.next_boss_timer = 0
         self.NEXT_BOSS_DELAY = 90  # frames — roughly 1.5 seconds at 60fps
+
+        pygame.mixer.init()
+        self.sound_card_pickup = pygame.mixer.Sound("assets/audio/sfx/pick up.wav")
+        self.sound_invalid = pygame.mixer.Sound("assets/audio/sfx/invalid set.wav")
     # ── drawing helpers ───────────────────────────────────────
 
     def _draw_card(self, card, x, y, selected):
@@ -388,11 +392,13 @@ class GameScene:
         if not valid:
             self.message = "INVALID SET"
             self.msg_col = RED
+            self.sound_invalid.play()
             return
 
         if ddz_set not in self.allowed_sets:
             self.message = f"{ddz_set.upper()} is not allowed!"
             self.msg_col = RED
+            self.sound_invalid.play()
             return
 
         has_gambling = "damage_multiplier" in self.player.active_gimmicks
@@ -558,6 +564,7 @@ class GameScene:
                         self.selected.discard(actual_index)
                     else:
                         self.selected.add(actual_index)
+                        self.sound_card_pickup.play()
                     return None
 
         if event.type == pygame.MOUSEWHEEL:
