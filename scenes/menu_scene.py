@@ -30,6 +30,11 @@ class MenuScene:
 
         self.settings_btn = pygame.Rect((self.W - btn_w) // 2, self.H // 2 + 220, btn_w, btn_h)
         self.settings_hovered = False
+
+        # Music
+        pygame.mixer.music.load("assets/audio/music/Main Menu GDLTDDZ.wav")
+        pygame.mixer.music.set_volume(0.5)
+        pygame.mixer.music.play(-1)  # -1 loops forever
     # ── helpers ───────────────────────────────────────────────
     def _new_particle(self):
         """A small drifting card-suit symbol in the background."""

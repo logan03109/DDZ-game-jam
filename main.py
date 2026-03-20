@@ -8,6 +8,7 @@ from scenes.menu_scene import MenuScene
 
 def main():
     pygame.init()
+    pygame.mixer.init()
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN | pygame.RESIZABLE)
     W, H = screen.get_size()
     pygame.display.set_caption("Steampunk DDZ")

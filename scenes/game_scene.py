@@ -109,6 +109,11 @@ class GameScene:
         pygame.mixer.init()
         self.sound_card_pickup = pygame.mixer.Sound("assets/audio/sfx/pick up.wav")
         self.sound_invalid = pygame.mixer.Sound("assets/audio/sfx/invalid set.wav")
+
+        # Music
+        pygame.mixer.music.load("assets/audio/music/GDLTDDZ unfinished.wav")
+        pygame.mixer.music.set_volume(0.5)
+        pygame.mixer.music.play(-1)
     # ── drawing helpers ───────────────────────────────────────
 
     def _draw_card(self, card, x, y, selected):
