@@ -110,6 +110,11 @@ class GameScene:
         self.sound_card_pickup = pygame.mixer.Sound(resource_path("assets/audio/sfx/pick up.wav"))
         self.sound_invalid = pygame.mixer.Sound(resource_path("assets/audio/sfx/invalid set.wav"))
 
+        self.sound_attack_small = pygame.mixer.Sound(resource_path("assets/audio/sfx/small.wav"))
+        self.sound_attack_big = pygame.mixer.Sound(resource_path("assets/audio/sfx/large.wav"))
+        self.sound_attack_small.set_volume(0.5)
+        self.sound_attack_big.set_volume(0.5)
+
         # Music
         pygame.mixer.music.load(resource_path("assets/audio/music/GDLTDDZ unfinished.wav"))
         pygame.mixer.music.set_volume(0.5)
@@ -409,6 +414,11 @@ class GameScene:
         has_gambling = "damage_multiplier" in self.player.active_gimmicks
         dmg, roll = damage_calc(cards, ddz_set, self.player.damage_mult, has_gambling)
         self.boss.hp -= int(dmg)
+
+        if ddz_set in ("single", "double"):
+            self.sound_attack_small.play()
+        else:
+            self.sound_attack_big.play()
 
         highest = max(card.numeric_rank() for card in cards)
         base = base_damage_constant[ddz_set]
