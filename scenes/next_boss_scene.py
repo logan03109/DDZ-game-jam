@@ -2,7 +2,7 @@
 import pygame
 import math
 import random
-from settings import BOSS_CONFIGS, GIMMICK_DESCRIPTIONS, gimmicks
+from settings import BOSS_CONFIGS, GIMMICK_DESCRIPTIONS, gimmicks, GIMMICK_CARD_CONFIGS
 
 class NextBossScene:
     def __init__(self, screen, W, H, boss_index, game_state):
@@ -35,9 +35,21 @@ class NextBossScene:
 
         # play button — only active after gimmick selected
         btn_w, btn_h = 220, 55
-        self.play_btn     = pygame.Rect(self.W // 2 - btn_w // 2,
-                                        self.H // 2 + 140, btn_w, btn_h)
+        self.play_btn = pygame.Rect(self.W // 2 - btn_w // 2,
+                                    self.H // 2 + 230, btn_w, btn_h)
         self.play_hovered = False
+
+        self.selected_gimmick_card = None
+        self.gimmick_card_hovered = None
+
+        gc_btn_w, gc_btn_h = 240, 80
+        gc_total_w = len(GIMMICK_CARD_CONFIGS) * gc_btn_w + (len(GIMMICK_CARD_CONFIGS) - 1) * 20
+        gc_start_x = self.W // 2 - gc_total_w // 2
+        self.gimmick_card_btns = []
+        for i, (val, cfg) in enumerate(GIMMICK_CARD_CONFIGS.items()):
+            rect = pygame.Rect(gc_start_x + i * (gc_btn_w + 20),
+                               self.H // 2 + 120, gc_btn_w, gc_btn_h)
+            self.gimmick_card_btns.append((val, cfg, rect))
 
     def _new_particle(self):
         return {
@@ -60,24 +72,31 @@ class NextBossScene:
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEMOTION:
-            self.play_hovered    = self.play_btn.collidepoint(event.pos)
+            self.play_hovered = self.play_btn.collidepoint(event.pos)
             self.gimmick_hovered = None
+            self.gimmick_card_hovered = None
             for g, rect in self.gimmick_btns:
                 if rect.collidepoint(event.pos):
                     self.gimmick_hovered = g
+            for val, cfg, rect in self.gimmick_card_btns:
+                if rect.collidepoint(event.pos):
+                    self.gimmick_card_hovered = val
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             for g, rect in self.gimmick_btns:
                 if rect.collidepoint(event.pos):
-                    if g not in self.game_state.player.active_gimmicks:  # ADD THIS CHECK
+                    if g not in self.game_state.player.active_gimmicks:
                         self.selected_gimmick = g
                     return None
-
-            # play button — only works if gimmick selected
+            for val, cfg, rect in self.gimmick_card_btns:
+                if rect.collidepoint(event.pos):
+                    self.selected_gimmick_card = val
+                    return None
             if self.play_btn.collidepoint(event.pos) and self.selected_gimmick:
                 self.game_state.player.apply_gimmick(self.selected_gimmick, self.game_state.deck)
+                if self.selected_gimmick_card:
+                    self.game_state.player.gimmick_card = self.selected_gimmick_card
                 return self.game_state
-        return None
 
     def update(self, dt):
         self.tick += 1
@@ -156,6 +175,47 @@ class NextBossScene:
         txt = self.font_btn.render("[ PLAY ]", True, label_col)
         self.screen.blit(txt, txt.get_rect(center=self.play_btn.center))
 
+        # Gimmick card section label
+        gc_label = self.font_sub.render("Choose a gimmick card:", True, (180, 180, 200))
+        self.screen.blit(gc_label, gc_label.get_rect(
+            centerx=self.W // 2, centery=self.H // 2 + 100))
+
+        # Gimmick card buttons
+        for val, cfg, rect in self.gimmick_card_btns:
+            is_selected = self.selected_gimmick_card == val
+            is_hovered = self.gimmick_card_hovered == val
+            already_owned = self.game_state.player.gimmick_card == val
+
+            if already_owned:
+                bg_col = (20, 20, 20)
+                border_col = (50, 50, 50)
+            elif is_selected:
+                bg_col = (50, 40, 0)
+                border_col = (220, 175, 50)
+            elif is_hovered:
+                bg_col = (40, 30, 10)
+                border_col = (180, 140, 40)
+            else:
+                bg_col = (15, 12, 5)
+                border_col = (80, 65, 20)
+
+            pygame.draw.rect(self.screen, bg_col, rect, border_radius=8)
+            pygame.draw.rect(self.screen, border_col, rect, 2, border_radius=8)
+
+            name_s = self.font_gimmick.render(f"CARD: {val}", True, border_col)
+            self.screen.blit(name_s, name_s.get_rect(
+                centerx=rect.centerx, centery=rect.top + 25))
+
+            desc_s = self.font_small.render(cfg["description"], True, (160, 160, 180))
+            desc_s = pygame.transform.scale(desc_s, (rect.w - 10, desc_s.get_height()))
+            self.screen.blit(desc_s, desc_s.get_rect(
+                centerx=rect.centerx, centery=rect.top + 55))
+
+            if already_owned:
+                owned_s = self.font_small.render("ACTIVE", True, (80, 80, 80))
+                self.screen.blit(owned_s, owned_s.get_rect(
+                    centerx=rect.centerx, centery=rect.top + 65))
+
     def on_resize(self, W, H):
         self.W = W
         self.H = H
@@ -170,3 +230,15 @@ class NextBossScene:
         btn_w, btn_h = 220, 55
         self.play_btn = pygame.Rect(self.W // 2 - btn_w // 2,
                                     self.H // 2 + 140, btn_w, btn_h)
+
+        gc_btn_w, gc_btn_h = 240, 80
+        gc_total_w = len(GIMMICK_CARD_CONFIGS) * gc_btn_w + (len(GIMMICK_CARD_CONFIGS) - 1) * 20
+        gc_start_x = self.W // 2 - gc_total_w // 2
+        self.gimmick_card_btns = []
+        for i, (val, cfg) in enumerate(GIMMICK_CARD_CONFIGS.items()):
+            rect = pygame.Rect(gc_start_x + i * (gc_btn_w + 20),
+                               self.H // 2 + 120, gc_btn_w, gc_btn_h)
+            self.gimmick_card_btns.append((val, cfg, rect))
+        btn_w, btn_h = 220, 55
+        self.play_btn = pygame.Rect(self.W // 2 - btn_w // 2,
+                                    self.H // 2 + 230, btn_w, btn_h)

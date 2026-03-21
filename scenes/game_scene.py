@@ -3,6 +3,7 @@ from entities.player import Player, validate_set, Deck, damage_calc
 from entities.npc1 import Boss
 from settings import *
 import pygame
+import random
 # Card dimensions
 CARD_W = 72
 CARD_H = 100
@@ -82,8 +83,6 @@ class GameScene:
         self.plays_remaining = BOSS_CONFIGS[self.boss_index]["max_plays"]
         self.shuffles_remaining = BOSS_CONFIGS[self.boss_index]["max_shuffles"] + self.player.bonus_shuffles
 
-        self.trigger_next_boss_scene = False
-
         self.card_rects = []
 
 
@@ -119,6 +118,22 @@ class GameScene:
         pygame.mixer.music.load(resource_path("assets/audio/music/GDLTDDZ unfinished.wav"))
         pygame.mixer.music.set_volume(0.5)
         pygame.mixer.music.play(-1)
+
+        self.anim_card_positions = []  # current x,y positions of animating cards
+        self.anim_card_targets = []  # target x,y positions
+        self.ANIM_CARD_SPEED = 0.15  # interpolation speed 0-1, higher = faster
+
+        # Animation state
+        self.anim_phase = 0  # 0 = idle, 1 = show cards, 2 = show damage, 3 = animate hp
+        self.anim_timer = 0
+        self.anim_cards = []  # cards being displayed during animation
+        self.anim_ddz_set = None
+        self.anim_dmg = 0
+        self.anim_roll = None
+        self.anim_boss_hp_display = 0  # the HP shown on the bar during animation
+        self.ANIM_SHOW_CARDS = 60  # frames to show played cards
+        self.ANIM_SHOW_DAMAGE = 160  # frames to show damage calculation
+        self.ANIM_HP_SPEED = 1  # hp drained per frame during animation
     # ── drawing helpers ───────────────────────────────────────
 
     def _draw_card(self, card, x, y, selected):
@@ -294,19 +309,24 @@ class GameScene:
         pygame.draw.rect(self.screen, (40, 10, 10), (bar_x, bar_y, bar_w, bar_h), border_radius=8)
 
         # Fill — clamped so it never goes below 0
-        fill = max(0, int(bar_w * (self.boss.hp / self.boss.max_hp)))
-        if fill > 0:
-            pygame.draw.rect(self.screen, (200, 40, 40), (bar_x, bar_y, fill, bar_h), border_radius=8)
 
         # Border                                                          # ADD FROM HERE
         pygame.draw.rect(self.screen, (220, 60, 60), (bar_x, bar_y, bar_w, bar_h), 2, border_radius=8)
+
+        # use animated hp value for the bar fill
+        display_hp = self.anim_boss_hp_display if self.anim_phase != 0 else self.boss.hp
+        fill = max(0, int(bar_w * (display_hp / self.boss.max_hp)))
+        if fill > 0:
+            pygame.draw.rect(self.screen, (200, 40, 40), (bar_x, bar_y, fill, bar_h), border_radius=8)
+
+        # hp number below bar also uses animated value
+        hp_label = self.font_small.render(f"{max(0, int(display_hp))}", True, (220, 60, 60))
 
         # Boss name inside bar
         boss_label = self.font_small.render(f"{self.boss.name}", True, WHITE)
         self.screen.blit(boss_label, boss_label.get_rect(center=(self.W // 2, bar_y + bar_h // 2)))
 
         # HP number below bar
-        hp_label = self.font_small.render(f"{max(0, self.boss.hp)}", True, (220, 60, 60))
         self.screen.blit(hp_label, hp_label.get_rect(center=(self.W // 2, bar_y + bar_h + 15)))
 
         plays_surf = self.font_small.render(f"PLAYS LEFT: {self.plays_remaining}", True, NEON_TEAL)
@@ -314,6 +334,8 @@ class GameScene:
 
         shuffles_surf = self.font_small.render(f"SHUFFLES LEFT: {self.shuffles_remaining}", True, (200, 80, 255))
         self.screen.blit(shuffles_surf, shuffles_surf.get_rect(topleft=(20, 80 + gimmick_panel_h + 28)))
+
+
 
     def _next_boss(self):
         self.boss_index += 1
@@ -391,6 +413,11 @@ class GameScene:
     # ── game logic ────────────────────────────────────────────
 
     def _play_turn(self):
+
+
+        if self.anim_phase != 0:
+            return
+
         if not self.selected:
             self.message = "No cards selected!"
             self.msg_col = RED
@@ -413,29 +440,48 @@ class GameScene:
 
         has_gambling = "damage_multiplier" in self.player.active_gimmicks
         dmg, roll = damage_calc(cards, ddz_set, self.player.damage_mult, has_gambling)
-        self.boss.hp -= int(dmg)
 
         if ddz_set in ("single", "double"):
             self.sound_attack_small.play()
         else:
             self.sound_attack_big.play()
 
-        highest = max(card.numeric_rank() for card in cards)
-        base = base_damage_constant[ddz_set]
-        mult = self.player.damage_mult
+        # store animation state BEFORE applying damage
+        self.anim_cards = cards
+        self.anim_ddz_set = ddz_set
+        self.anim_dmg = int(dmg)
+        self.anim_roll = roll
+        self.anim_boss_hp_display = self.boss.hp
+        self.anim_phase = 1
+        self.anim_timer = self.ANIM_SHOW_CARDS
 
-        if roll is not None:
-            calc_str = f"{highest} x {base} x {round(roll, 1)} = {int(dmg)}"
-        elif mult != 1:
-            calc_str = f"{highest} x {base} x {round(mult, 2)} = {int(dmg)}"
-        else:
-            calc_str = f"{highest} x {base} = {int(dmg)}"
+        # capture starting positions after anim_cards is set
+        total_w = len(self.anim_cards) * (CARD_W + CARD_GAP) - CARD_GAP
+        start_tx = (self.W - total_w) // 2
+        target_y = self.H // 2 - CARD_H // 2
 
-        self.message = f"{ddz_set.upper()}!  {calc_str}  |  {self.plays_remaining - 1} plays left"
-        self.msg_col = NEON_TEAL
+        self.anim_card_positions = []
+        self.anim_card_targets = []
+
+        for i, card in enumerate(self.anim_cards):
+            start_x = self.W // 2
+            start_y = self.H - CARD_H - 100
+            for actual_index, rect in self.card_rects:
+                if actual_index < len(self.player.hand.hand) and self.player.hand.hand[actual_index] == card:
+                    start_x = rect.x
+                    start_y = rect.y
+                    break
+            self.anim_card_positions.append([float(start_x), float(start_y)])
+            self.anim_card_targets.append([float(start_tx + i * (CARD_W + CARD_GAP)), float(target_y)])
+
+        # apply damage AFTER capturing display hp
+        self.boss.hp -= self.anim_dmg
+
+        # remove cards from hand immediately
         for card in cards:
             self.player.hand.hand.remove(card)
-        # refill hand up to current hand size
+
+        # refill hand
         cards_to_draw = self.player.hand_size - len(self.player.hand.hand)
         for _ in range(min(cards_to_draw, len(self.deck.deck))):
             self.player.hand.hand.append(self.deck.deck.pop())
@@ -447,9 +493,6 @@ class GameScene:
 
         self.plays_remaining -= 1
         self.selected = set()
-
-        if self.boss.hp <= 0:
-            self._next_boss()
 
     def _draw_settings_button(self):
         col = (20, 20, 40) if self.settings_hovered else (10, 10, 20)
@@ -528,6 +571,34 @@ class GameScene:
         pygame.draw.rect(self.screen, (0, 220, 180), self.tutorial_ok_btn, 2, border_radius=8)
         ok_label = self.font_small.render("[ OK ]", True, (0, 220, 180))
         self.screen.blit(ok_label, ok_label.get_rect(center=self.tutorial_ok_btn.center))
+
+    def _draw_played_cards(self):
+        if self.anim_phase != 1 or not self.anim_cards:
+            return
+
+        for i, card in enumerate(self.anim_cards):
+            x = int(self.anim_card_positions[i][0])
+            y = int(self.anim_card_positions[i][1])
+            self._draw_card(card, x, y, selected=False)
+
+    def _apply_gimmick_card_effect(self, value):
+        effect = GIMMICK_CARD_CONFIGS[value]["effect"]
+        if effect == "bleed":
+            self.boss.hp -= 10
+            self.message += "  BLEED!"
+        elif effect == "dmg_boost":
+            self.anim_dmg = int(self.anim_dmg * 1.5)
+            self.boss.hp -= int(self.anim_dmg * 0.5)  # apply the bonus damage
+            self.message += "  DMG BOOST!"
+        elif effect == "plays_up":
+            if random.randint(0, 1) == 1:
+                self.plays_remaining += 1
+                self.message += "  +1 PLAY!"
+        elif effect == "shuffles_up":
+            if random.randint(0, 1) == 1:
+                self.shuffles_remaining += 1
+                self.message += "  +1 SHUFFLE!"
+
     # ── scene interface ───────────────────────────────────────
 
     def _point_in_circle(self, point, center):
@@ -589,31 +660,83 @@ class GameScene:
         return None
 
     def update(self, dt):
-        if self.next_boss_timer > 0:
-            self.next_boss_timer -= 1
+        if self.anim_phase == 1:
+            self.anim_timer -= 1
+            all_arrived = True
+            for i in range(len(self.anim_card_positions)):
+                cx, cy = self.anim_card_positions[i]
+                tx, ty = self.anim_card_targets[i]
+                new_x = cx + (tx - cx) * self.ANIM_CARD_SPEED
+                new_y = cy + (ty - cy) * self.ANIM_CARD_SPEED
+                self.anim_card_positions[i] = [new_x, new_y]
+                if abs(new_x - tx) > 1 or abs(new_y - ty) > 1:
+                    all_arrived = False
+            if self.anim_timer <= 0 or all_arrived:
+                for i in range(len(self.anim_card_positions)):
+                    self.anim_card_positions[i] = list(self.anim_card_targets[i])
+                self.anim_phase = 2
+                self.anim_timer = self.ANIM_SHOW_DAMAGE
             return None
 
-        if self.pending_win:
-            from scenes.win_scene import WinScene
-            return WinScene(self.screen, self.W, self.H)
+        if self.anim_phase == 2:
+            self.anim_timer -= 1
+
+            # drain hp bar during damage display
+            if self.anim_boss_hp_display > self.boss.hp:
+                self.anim_boss_hp_display = max(
+                    self.boss.hp,
+                    self.anim_boss_hp_display - self.ANIM_HP_SPEED
+                )
+
+            # build calc string
+            highest = max(card.numeric_rank() for card in self.anim_cards)
+            base = base_damage_constant[self.anim_ddz_set]
+            mult = self.player.damage_mult
+            if self.anim_roll is not None:
+                self.message = f"{self.anim_ddz_set.upper()}!  {highest} x {base} x {round(self.anim_roll, 1)} = {self.anim_dmg}"
+            elif mult != 1:
+                self.message = f"{self.anim_ddz_set.upper()}!  {highest} x {base} x {round(mult, 2)} = {self.anim_dmg}"
+            else:
+                self.message = f"{self.anim_ddz_set.upper()}!  {highest} x {base} = {self.anim_dmg}"
+            self.msg_col = NEON_TEAL
+
+            if self.anim_timer <= 0:
+                self.anim_boss_hp_display = self.boss.hp
+                self.anim_phase = 0
+                self.message = f"{self.plays_remaining} plays left"
+                self.msg_col = GREY
+
+                # check boss death AFTER animation completes
+                if self.boss.hp <= 0:
+                    self._next_boss()
+
+            return None
+
+        # normal update — no animation running
         if self.trigger_lose:
             from scenes.lose_scene import LoseScene
             return LoseScene(self.screen, self.W, self.H)
+        if self.pending_win:
+            from scenes.win_scene import WinScene
+            return WinScene(self.screen, self.W, self.H)
         if self.pending_next_boss:
             self.pending_next_boss = False
             self._load_next_boss()
             from scenes.next_boss_scene import NextBossScene
             return NextBossScene(self.screen, self.W, self.H, self.boss_index, self)
+
         return None
 
     def draw(self):
         self.screen.fill(BG_COLOUR)
         self._draw_info()
+        self._draw_sprites()
         self._draw_hand()
         self._draw_message()
-        self._draw_play_button()
-        self._draw_sort_button()
-        self._draw_shuffle_button()
-        self._draw_settings_button()
-        self._draw_sprites()
+        if self.anim_phase == 0:
+            self._draw_play_button()
+            self._draw_sort_button()
+            self._draw_shuffle_button()
+            self._draw_settings_button()
+        self._draw_played_cards()
         self._draw_tutorial()

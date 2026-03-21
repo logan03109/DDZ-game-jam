@@ -13,6 +13,8 @@ class Player:
         self.hand_size = hand_size
         self.bonus_shuffles = 0
 
+        self.gimmick_card = None
+
     def pick_cards(
             self):  # i avoided doing this because this will certainly require pygame consideration, and is not useful for python console testing
         pass

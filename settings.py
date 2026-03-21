@@ -90,6 +90,13 @@ GIMMICK_VALUES = {
     "shuffle_count_up":  2,
 }
 
+GIMMICK_CARD_CONFIGS = {
+    "3": {"effect": "bleed",        "description": "Playing a 3 applies bleed (-10 bonus dmg)"},
+    "4": {"effect": "dmg_boost",    "description": "Playing a 4 multiplies damage by 1.5x"},
+    "5": {"effect": "plays_up",     "description": "Playing a 5 has 50% chance of +1 play"},
+    "6": {"effect": "shuffles_up",  "description": "Playing a 6 has 50% chance of +1 shuffle"},
+}
+
 # Font sizes — increase these to scale all text up
 FONT_SIZE_SMALL  = 22
 FONT_SIZE_NORMAL = 24
