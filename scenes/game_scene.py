@@ -128,8 +128,8 @@ class GameScene:
         self.anim_dmg = 0
         self.anim_roll = None
         self.anim_boss_hp_display = 0  # the HP shown on the bar during animation
-        self.ANIM_SHOW_CARDS = 60  # frames to show played cards
-        self.ANIM_SHOW_DAMAGE = 160  # frames to show damage calculation
+        self.ANIM_SHOW_CARDS = 40  # frames to show played cards
+        self.ANIM_SHOW_DAMAGE = 20  # frames to show damage calculation
         self.ANIM_HP_SPEED = 1  # hp drained per frame during animation
 
         # Background image
