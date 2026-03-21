@@ -11,7 +11,7 @@ def main():
     pygame.mixer.init()
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN | pygame.RESIZABLE)
     W, H = screen.get_size()
-    pygame.display.set_caption("Steampunk DDZ")
+    pygame.display.set_caption("The Eye")
     clock = pygame.time.Clock()
 
     current_scene = MenuScene(screen, W, H)

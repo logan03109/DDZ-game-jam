@@ -15,18 +15,25 @@ class LoseScene:
         self.font_btn   = pygame.font.SysFont("couriernew", 26, bold=True)
 
         btn_w, btn_h = 220, 55
-        self.new_game_btn = pygame.Rect(self.W // 2 - btn_w - 20, self.H // 2 + 80, btn_w, btn_h)
-        self.menu_btn     = pygame.Rect(self.W // 2 + 20,          self.H // 2 + 80, btn_w, btn_h)
+        self.new_game_btn = pygame.Rect(self.W // 2 - btn_w - 20, self.H // 2 + 160, btn_w, btn_h)
+        self.menu_btn = pygame.Rect(self.W // 2 + 20, self.H // 2 + 160, btn_w, btn_h)
         self.new_game_hovered = False
         self.menu_hovered     = False
 
         self.tick      = 0
         self.particles = [self._new_particle() for _ in range(80)]
-
+        self.player = player
         pygame.mixer.music.stop()
         self.sound_lose = pygame.mixer.Sound(resource_path("assets/audio/sfx/lose.wav"))
         self.sound_lose.set_volume(0.7)
         self.sound_lose.play()
+        try:
+            self.bg_image = pygame.image.load(resource_path("assets/images/backgrounds/lose screen.png")).convert()
+            self.bg_image = pygame.transform.scale(self.bg_image, (self.W, self.H))
+        except:
+            self.bg_image = None
+
+
 
     def _new_particle(self):
         return {
@@ -68,6 +75,9 @@ class LoseScene:
             if self.menu_btn.collidepoint(event.pos):
                 from scenes.menu_scene import MenuScene
                 return MenuScene(self.screen, self.W, self.H)
+        if self.new_game_btn.collidepoint(event.pos):
+            from scenes.game_scene import GameScene
+            return GameScene(self.screen, self.W, self.H, self.player)
 
         return None
 
@@ -76,8 +86,13 @@ class LoseScene:
         return None
 
     def draw(self):
-        self.screen.fill((8, 5, 5))
-        self._draw_particles()
+        if self.bg_image:
+            self.screen.blit(self.bg_image, (0, 0))
+            overlay = pygame.Surface((self.W, self.H), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 120))
+            self.screen.blit(overlay, (0, 0))
+        else:
+            self.screen.fill((8, 5, 5))
 
         # Title
         pulse = abs(math.sin(self.tick * 0.03))
@@ -89,8 +104,39 @@ class LoseScene:
         sub = self.font_sub.render("You ran out of plays. The Shadow Landlord wins.", True, (160, 80, 80))
         self.screen.blit(sub, sub.get_rect(centerx=self.W // 2, centery=self.H // 2))
 
+        self._draw_retained()
+
         # Buttons
         self._draw_button(self.new_game_btn, "[ NEW GAME ]",
                           self.new_game_hovered, (210, 50, 50), (60, 10, 10))
         self._draw_button(self.menu_btn,     "[ MENU ]",
                           self.menu_hovered,     (220, 175, 50), (60, 45, 0))
+
+    def _draw_retained(self):
+        if not self.player:
+            return
+
+        lines = ["RETAINED UPGRADES:"]
+
+        if self.player.active_gimmicks:
+            for g in self.player.active_gimmicks:
+                lines.append(f"  + {g.upper().replace('_', ' ')}")
+        else:
+            lines.append("  none")
+
+        if self.player.gimmick_card:
+            lines.append(f"  CARD GIMMICK: {self.player.gimmick_card}")
+
+        panel_w = 300
+        panel_h = len(lines) * 22 + 20
+        panel_x = self.W // 2 - panel_w // 2
+        panel_y = self.H // 2 + 40
+
+        pygame.draw.rect(self.screen, (20, 10, 10), (panel_x, panel_y, panel_w, panel_h), border_radius=8)
+        pygame.draw.rect(self.screen, (120, 40, 40), (panel_x, panel_y, panel_w, panel_h), 1, border_radius=8)
+
+        font = pygame.font.SysFont("couriernew", 16)
+        for i, line in enumerate(lines):
+            col = (220, 175, 50) if i == 0 else (160, 200, 160)
+            surf = font.render(line, True, col)
+            self.screen.blit(surf, (panel_x + 12, panel_y + 8 + i * 22))

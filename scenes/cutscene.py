@@ -1,9 +1,91 @@
-class CutsceneManager:
-    def __init__(self):
-        self.active = False
+# scenes/cutscene.py
+import pygame
+import cv2
+from settings import resource_path, FONT_SIZE_SMALL
 
-    def play(self, events):
-        pass
+class CutScene:
+    def __init__(self, screen, W, H):
+        self.screen = screen
+        self.W      = W
+        self.H      = H
+
+        self.font_small = pygame.font.SysFont("couriernew", FONT_SIZE_SMALL)
+
+        # load video
+        self.cap     = cv2.VideoCapture(resource_path("assets/cutscene.mp4"))
+        self.fps     = self.cap.get(cv2.CAP_PROP_FPS)
+        self.frame_delay = 1000 / self.fps   # ms per frame
+        self.last_frame_time = 0
+        self.current_frame   = None
+        self.done            = False
+
+        # skip button
+        btn_w, btn_h      = 120, 40
+        self.skip_btn     = pygame.Rect(self.W - btn_w - 20, self.H - btn_h - 20, btn_w, btn_h)
+        self.skip_hovered = False
+
+        # in __init__ after loading the video
+        pygame.mixer.music.load(resource_path("assets/audio/music/cutscene_audio.wav"))
+        pygame.mixer.music.play()
+
+    def on_resize(self, W, H):
+        self.W        = W
+        self.H        = H
+        btn_w, btn_h  = 120, 40
+        self.skip_btn = pygame.Rect(self.W - btn_w - 20, self.H - btn_h - 20, btn_w, btn_h)
+
+    def _go_to_game(self):
+        self.cap.release()
+        self.done = True
+
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEMOTION:
+            self.skip_hovered = self.skip_btn.collidepoint(event.pos)
+
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self.skip_btn.collidepoint(event.pos):
+                self._go_to_game()
+
+        if event.type == pygame.KEYDOWN:
+            if event.key in (pygame.K_SPACE, pygame.K_RETURN, pygame.K_ESCAPE):
+                self._go_to_game()
+
+        return None
 
     def update(self, dt):
-        pass
+        if self.done:
+            from scenes.game_scene import GameScene
+            return GameScene(self.screen, self.W, self.H)
+
+        # advance video frame based on time
+        self.last_frame_time += dt
+        if self.last_frame_time >= self.frame_delay:
+            self.last_frame_time = 0
+            ret, frame = self.cap.read()
+            if not ret:
+                # video ended — go to game
+                self._go_to_game()
+                return None
+
+            # convert BGR to RGB and rotate for pygame
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame = cv2.resize(frame, (self.W, self.H))
+            frame = frame.swapaxes(0, 1)
+            self.current_frame = pygame.surfarray.make_surface(frame)
+
+        return None
+
+    def draw(self):
+        if self.current_frame:
+            self.screen.blit(self.current_frame, (0, 0))
+        else:
+            self.screen.fill((0, 0, 0))
+
+        # skip button
+        col       = (40, 40, 40) if self.skip_hovered else (20, 20, 20)
+        label_col = (160, 160, 160) if self.skip_hovered else (100, 100, 100)
+        pygame.draw.rect(self.screen, col,        self.skip_btn, border_radius=6)
+        pygame.draw.rect(self.screen, (80, 80, 80), self.skip_btn, 1, border_radius=6)
+        txt = self.font_small.render("[ SKIP ]", True, label_col)
+        self.screen.blit(txt, txt.get_rect(center=self.skip_btn.center))
+

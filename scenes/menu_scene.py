@@ -59,7 +59,7 @@ class MenuScene:
 
     def _draw_title(self):
         """Title with cyan/magenta glitch offset on alternate frames."""
-        title = "STEAMPUNK DDZ"
+        title = "The Eye"
         offset = 4 if self.glitch_on else 0
 
         # Cyan ghost
@@ -80,7 +80,7 @@ class MenuScene:
         self.screen.blit(s3, r3)
 
         # Subtitle
-        sub = self.font_sub.render(">> FIGHT THE LANDLORD  //  STEAMPUNK EDITION <<", True, (80, 180, 160))
+        sub = self.font_sub.render(">> FIGHT THE LANDLORD  //  The EYE <<", True, (80, 180, 160))
         self.screen.blit(sub, sub.get_rect(centerx=self.W//2, centery=self.H//2 - 60))
 
     def _draw_button(self):
@@ -161,8 +161,8 @@ class MenuScene:
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.btn_rect.collidepoint(event.pos):
-                from scenes.game_scene import GameScene
-                return GameScene(self.screen, self.W, self.H)
+                from scenes.cutscene import CutScene
+                return CutScene(self.screen, self.W, self.H)
             if self.exit_btn.collidepoint(event.pos):
                 import sys
                 pygame.quit()

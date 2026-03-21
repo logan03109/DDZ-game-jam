@@ -36,7 +36,7 @@ DARK_RED    = (80,   15,  15)
 GOLD = (220, 175, 50)
 
 class GameScene:
-    def __init__(self, screen, W, H):
+    def __init__(self, screen, W, H, existing_player=None):
         self.screen = screen
         self.W = W
         self.H = H
@@ -91,10 +91,7 @@ class GameScene:
         self.settings_btn = pygame.Rect(self.W - 120, 20, 115, 35)
         self.settings_hovered = False
 
-        self.player_sprite = self._make_placeholder(80, 120, (40, 180, 80))  # green
-        self.boss_sprite = self._make_placeholder(80, 120, (180, 40, 40))  # red
-        # self.player_sprite = pygame.image.load("assets/images/sprites/player.png").convert_alpha()
-        # self.boss_sprite = pygame.image.load("assets/images/sprites/boss.png").convert_alpha()
+        self.boss_sprite = self._load_boss_sprite()
 
         self.show_tutorial = True  # shows on first load
         self.tutorial_ok_btn = pygame.Rect(self.W // 2 - 60, self.H // 2 + 180, 120, 45)
@@ -134,6 +131,35 @@ class GameScene:
         self.ANIM_SHOW_CARDS = 60  # frames to show played cards
         self.ANIM_SHOW_DAMAGE = 160  # frames to show damage calculation
         self.ANIM_HP_SPEED = 1  # hp drained per frame during animation
+
+        # Background image
+        self.bg_image = self._load_bg()
+
+        self.debug_mode = False
+        self.debug_event = ""
+        self.debug_event_timer = 0
+
+        if existing_player:
+            self.player = existing_player
+            self.player.hand.hand = []
+            self.player.hand_size = self.player_hand_size  # reset to boss 1 hand size
+            for _ in range(self.player_hand_size):
+                if self.deck.deck:
+                    self.player.hand.hand.append(self.deck.deck.pop())
+            self.player.hand.hand.sort(key=lambda card: card.numeric_rank())
+            # active_gimmicks, gimmick_card, damage_mult, bonus_shuffles all preserved
+        else:
+            self.player = Player(self.deck.deck, self.player_hand_size)
+            self.player.hand.hand.sort(key=lambda card: card.numeric_rank())
+
+        try:
+            self.img_play = pygame.image.load(resource_path("assets/images/ui/play_btn.png")).convert_alpha()
+            self.img_sort = pygame.image.load(resource_path("assets/images/ui/sort_btn.png")).convert_alpha()
+            self.img_shuffle = pygame.image.load(resource_path("assets/images/ui/shuffle_btn.png")).convert_alpha()
+        except:
+            self.img_play = None
+            self.img_sort = None
+            self.img_shuffle = None
     # ── drawing helpers ───────────────────────────────────────
 
     def _draw_card(self, card, x, y, selected):
@@ -209,24 +235,37 @@ class GameScene:
         txt = self.font_ui.render("<" if left else ">", True, col)
         self.screen.blit(txt, (x, y))
 
-    def _draw_circle_button(self, center, label, hovered, border_col, hover_col):
-        col = hover_col if hovered else (10, 15, 30)
-        pygame.draw.circle(self.screen, col, center, self.btn_radius)
-        pygame.draw.circle(self.screen, border_col, center, self.btn_radius, 2)
-        txt = self.font_small.render(label, True, border_col if not hovered else (255, 255, 255))
-        self.screen.blit(txt, txt.get_rect(center=center))
+    def _draw_circle_button(self, center, label, hovered, border_col, hover_col, img=None):
+        if img:
+            # scale image to button diameter
+            size = self.btn_radius * 2
+            scaled = pygame.transform.scale(img, (size, size))
+            if hovered:
+                scaled.set_alpha(200)
+            else:
+                scaled.set_alpha(255)
+            rect = scaled.get_rect(center=center)
+            self.screen.blit(scaled, rect)
+            # border ring
+            pygame.draw.circle(self.screen, border_col, center, self.btn_radius, 2)
+        else:
+            col = hover_col if hovered else (10, 15, 30)
+            pygame.draw.circle(self.screen, col, center, self.btn_radius)
+            pygame.draw.circle(self.screen, border_col, center, self.btn_radius, 2)
+            txt = self.font_small.render(label, True, border_col if not hovered else (255, 255, 255))
+            self.screen.blit(txt, txt.get_rect(center=center))
 
     def _draw_play_button(self):
         self._draw_circle_button(self.play_btn_center, "PLAY", self.play_hovered,
-                                 NEON_TEAL, DARK_TEAL)
+                                 NEON_TEAL, DARK_TEAL, self.img_play)
 
     def _draw_sort_button(self):
         self._draw_circle_button(self.sort_btn_center, "SORT", self.sort_hovered,
-                                 (0, 120, 220), (10, 20, 45))
+                                 (0, 120, 220), (10, 20, 45), self.img_sort)
 
     def _draw_shuffle_button(self):
         self._draw_circle_button(self.shuffle_btn_center, "SHUFFLE", self.shuffle_hovered,
-                                 (180, 0, 255), (25, 5, 35))
+                                 (180, 0, 255), (25, 5, 35), self.img_shuffle)
 
     def _sort_hand(self):
         self.player.hand.hand.sort(key=lambda card: card.numeric_rank())
@@ -337,7 +376,15 @@ class GameScene:
         shuffles_surf = self.font_small.render(f"SHUFFLES LEFT: {self.shuffles_remaining}", True, (200, 80, 255))
         self.screen.blit(shuffles_surf, shuffles_surf.get_rect(topleft=(20, 80 + gimmick_panel_h + 28)))
 
-
+    def _load_bg(self):
+        config = BOSS_CONFIGS[self.boss_index]
+        try:
+            img = pygame.image.load(resource_path(config["background"])).convert()
+            return pygame.transform.scale(img, (self.W, self.H))
+        except:
+            surf = pygame.Surface((self.W, self.H))
+            surf.fill(BG_COLOUR)
+            return surf
 
     def _next_boss(self):
         self.boss_index += 1
@@ -357,6 +404,7 @@ class GameScene:
         self.player.hand_size = config["hand_size"]
         self.plays_remaining = config["max_plays"]
         self.shuffles_remaining = config["max_shuffles"] + self.player.bonus_shuffles
+        self.bg_image = self._load_bg()
 
         self.deck = Deck()
         self.deck.make_deck()
@@ -373,24 +421,10 @@ class GameScene:
     def _draw_sprites(self):
         hand_top = self.H - CARD_H - 100
 
-        # Player sprite — bottom left
-        player_pad_left = 500
-        player_pad_bottom = 200
-        sprite_x = player_pad_left
-        sprite_y = hand_top - self.player_sprite.get_height() - player_pad_bottom
-        self.screen.blit(self.player_sprite, (sprite_x, sprite_y))
-
-        # Boss sprite — top right
-        boss_pad_right = 500
-        boss_pad_top = 200
-        boss_sprite_x = self.W - self.boss_sprite.get_width() - boss_pad_right
-        boss_sprite_y = boss_pad_top
-        self.screen.blit(self.boss_sprite, (boss_sprite_x, boss_sprite_y))
-
     def on_resize(self, W, H):
         self.W = W
         self.H = H
-
+        self.bg_image = pygame.transform.scale(self.bg_image, (self.W, self.H))
         hand_top = self.H - CARD_H - 100
 
         btn_pad_right = 160  # distance from right edge
@@ -606,8 +640,9 @@ class GameScene:
     def _apply_gimmick_card_effect(self, value):
         effect = GIMMICK_CARD_CONFIGS[value]["effect"]
         if effect == "bleed":
-            self.boss.hp -= 10
-            self.message += "  BLEED!"
+            self.boss.bleed_stacks += 1
+            self.debug_event = f"BLEED APPLIED x{self.boss.bleed_stacks}"
+            self.debug_event_timer = 120
         elif effect == "dmg_boost":
             self.anim_dmg = int(self.anim_dmg * 1.5)
             self.boss.hp -= int(self.anim_dmg * 0.5)  # apply the bonus damage
@@ -621,6 +656,14 @@ class GameScene:
                 self.shuffles_remaining += 1
                 self.message += "  +1 SHUFFLE!"
 
+    def _load_boss_sprite(self):
+        config = BOSS_CONFIGS[self.boss_index]
+        try:
+            sprite = pygame.image.load(resource_path(config["sprite"])).convert_alpha()
+            return sprite
+        except:
+            return self._make_placeholder(80, 120, (180, 40, 40))
+
     # ── scene interface ───────────────────────────────────────
 
     def _point_in_circle(self, point, center):
@@ -629,6 +672,9 @@ class GameScene:
         return (dx * dx + dy * dy) <= self.btn_radius ** 2
 
     def handle_event(self, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_d:
+                self.debug_mode = not self.debug_mode
         if self.show_tutorial:
             if event.type == pygame.MOUSEMOTION:
                 self.tutorial_ok_hovered = self.tutorial_ok_btn.collidepoint(event.pos)
@@ -736,8 +782,8 @@ class GameScene:
             from scenes.lose_scene import LoseScene
             return LoseScene(self.screen, self.W, self.H, self.player)
         if self.pending_win:
-            from scenes.win_scene import WinScene
-            return WinScene(self.screen, self.W, self.H)
+            from scenes.lose_cutscene import LoseCutScene
+            return LoseCutScene(self.screen, self.W, self.H)
         if self.pending_next_boss:
             self.pending_next_boss = False
             self._load_next_boss()
@@ -747,7 +793,11 @@ class GameScene:
         return None
 
     def draw(self):
-        self.screen.fill(BG_COLOUR)
+        self.screen.blit(self.bg_image, (0, 0))
+        # dark overlay for readability
+        overlay = pygame.Surface((self.W, self.H), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 100))  # increase last number for darker overlay
+        self.screen.blit(overlay, (0, 0))
         self._draw_info()
         self._draw_sprites()
         self._draw_hand()

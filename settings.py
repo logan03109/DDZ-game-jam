@@ -28,8 +28,10 @@ CARD_WHITE  = (240, 235, 220)
 
 BOSS_CONFIGS = [
     {
-        "name": "Shadow Landlord",
+        "name": "PHOBOS - General of Mars",
         "hp": 100,
+        "sprite": "assets/images/sprites/boss.png",
+        "background": "assets/images/backgrounds/bg1.png",
         "hand_size": 10,
         "max_plays": 5,
         "max_shuffles": 3,
@@ -41,8 +43,10 @@ BOSS_CONFIGS = [
         ]
     },
     {
-        "name": "Shadow Landlord II",
+        "name": "TITAN - General of Saturn",
         "hp": 250,
+        "sprite": "assets/images/sprites/boss.png",
+        "background": "assets/images/backgrounds/bg2.png",
         "hand_size": 15,
         "max_plays": 5,
         "max_shuffles": 3,
@@ -59,8 +63,10 @@ BOSS_CONFIGS = [
         ]
     },
     {
-        "name": "Shadow Landlord III",
+        "name": "Ganymede - Supreme emperor of Jupiter",
         "hp": 500,
+        "sprite": "assets/images/sprites/boss.png",
+        "background": "assets/images/backgrounds/bg3.png",
         "hand_size": 20,
         "max_plays": 5,
         "max_shuffles": 3,
