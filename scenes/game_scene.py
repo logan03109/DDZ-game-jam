@@ -79,7 +79,7 @@ class GameScene:
         self.allowed_sets = BOSS_CONFIGS[self.boss_index]["allowed_sets"]
         self.player_hand_size = BOSS_CONFIGS[self.boss_index]["hand_size"]
         self.player = Player(self.deck.deck, self.player_hand_size)
-        self.player.hand.hand.sort(key=lambda card: card.numeric_rank())  # ADD
+        self.player.hand.hand.sort(key=lambda card: card.numeric_rank())
         self.plays_remaining = BOSS_CONFIGS[self.boss_index]["max_plays"]
         self.shuffles_remaining = BOSS_CONFIGS[self.boss_index]["max_shuffles"] + self.player.bonus_shuffles
 
@@ -257,7 +257,6 @@ class GameScene:
 
     def _draw_message(self):
         if self.message:
-            # split into two lines if too long
             parts = self.message.split("  |  ")
             if len(parts) == 2:
                 line1 = parts[0]
@@ -305,29 +304,23 @@ class GameScene:
         bar_x = self.W // 2 - bar_w // 2
         bar_y = 20
 
-        # Background
         pygame.draw.rect(self.screen, (40, 10, 10), (bar_x, bar_y, bar_w, bar_h), border_radius=8)
-
-        # Fill — clamped so it never goes below 0
-
-        # Border                                                          # ADD FROM HERE
         pygame.draw.rect(self.screen, (220, 60, 60), (bar_x, bar_y, bar_w, bar_h), 2, border_radius=8)
 
-        # use animated hp value for the bar fill
         display_hp = self.anim_boss_hp_display if self.anim_phase != 0 else self.boss.hp
         fill = max(0, int(bar_w * (display_hp / self.boss.max_hp)))
         if fill > 0:
             pygame.draw.rect(self.screen, (200, 40, 40), (bar_x, bar_y, fill, bar_h), border_radius=8)
 
-        # hp number below bar also uses animated value
-        hp_label = self.font_small.render(f"{max(0, int(display_hp))}", True, (220, 60, 60))
-
-        # Boss name inside bar
         boss_label = self.font_small.render(f"{self.boss.name}", True, WHITE)
-        self.screen.blit(boss_label, boss_label.get_rect(center=(self.W // 2, bar_y + bar_h // 2)))
+        self.screen.blit(boss_label, boss_label.get_rect(
+            center=(self.W // 2, bar_y + bar_h // 2)))
 
-        # HP number below bar
-        self.screen.blit(hp_label, hp_label.get_rect(center=(self.W // 2, bar_y + bar_h + 15)))
+        hp_label = self.font_small.render(f"{max(0, int(display_hp))}", True, (220, 60, 60))
+        self.screen.blit(hp_label, hp_label.get_rect(
+            center=(self.W // 2, bar_y + bar_h + 15)))
+
+        # Boss stats
         stats_str = ""
         if self.boss.damage_reduction > 0:
             stats_str += f"DMG REDUCTION: {int(self.boss.damage_reduction * 100)}%  "
@@ -422,7 +415,6 @@ class GameScene:
     # ── game logic ────────────────────────────────────────────
 
     def _play_turn(self):
-
         if self.anim_phase != 0:
             return
 
@@ -476,7 +468,7 @@ class GameScene:
         self.anim_phase = 1
         self.anim_timer = self.ANIM_SHOW_CARDS
 
-        # capture starting positions after anim_cards is set
+        # capture starting positions
         total_w = len(self.anim_cards) * (CARD_W + CARD_GAP) - CARD_GAP
         start_tx = (self.W - total_w) // 2
         target_y = self.H // 2 - CARD_H // 2
@@ -495,12 +487,19 @@ class GameScene:
             self.anim_card_positions.append([float(start_x), float(start_y)])
             self.anim_card_targets.append([float(start_tx + i * (CARD_W + CARD_GAP)), float(target_y)])
 
-        # apply damage AFTER capturing display hp
+        # apply boss damage reduction
         actual_dmg = int(self.anim_dmg * (1 - self.boss.damage_reduction))
         self.boss.hp -= actual_dmg
-        self.anim_dmg = actual_dmg  # update so animation shows correct value
+        self.anim_dmg = actual_dmg
 
-        # remove cards from hand immediately
+        # apply gimmick card effect
+        if self.player.gimmick_card:
+            for card in cards:
+                if card.value == self.player.gimmick_card:
+                    self._apply_gimmick_card_effect(card.value)
+                    break
+
+        # remove cards from hand
         for card in cards:
             self.player.hand.hand.remove(card)
 
@@ -704,14 +703,12 @@ class GameScene:
         if self.anim_phase == 2:
             self.anim_timer -= 1
 
-            # drain hp bar during damage display
             if self.anim_boss_hp_display > self.boss.hp:
                 self.anim_boss_hp_display = max(
                     self.boss.hp,
                     self.anim_boss_hp_display - self.ANIM_HP_SPEED
                 )
 
-            # build calc string
             highest = max(card.numeric_rank() for card in self.anim_cards)
             base = base_damage_constant[self.anim_ddz_set]
             mult = self.player.damage_mult
@@ -729,16 +726,15 @@ class GameScene:
                 self.message = f"{self.plays_remaining} plays left"
                 self.msg_col = GREY
 
-                # check boss death AFTER animation completes
                 if self.boss.hp <= 0:
                     self._next_boss()
 
             return None
 
-        # normal update — no animation running
+        # normal update
         if self.trigger_lose:
             from scenes.lose_scene import LoseScene
-            return LoseScene(self.screen, self.W, self.H)
+            return LoseScene(self.screen, self.W, self.H, self.player)
         if self.pending_win:
             from scenes.win_scene import WinScene
             return WinScene(self.screen, self.W, self.H)

@@ -5,7 +5,7 @@ import pygame
 import random
 
 class LoseScene:
-    def __init__(self, screen, W, H):
+    def __init__(self, screen, W, H, player=None):
         self.screen = screen
         self.W = W
         self.H = H
