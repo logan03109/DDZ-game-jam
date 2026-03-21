@@ -328,6 +328,15 @@ class GameScene:
 
         # HP number below bar
         self.screen.blit(hp_label, hp_label.get_rect(center=(self.W // 2, bar_y + bar_h + 15)))
+        stats_str = ""
+        if self.boss.damage_reduction > 0:
+            stats_str += f"DMG REDUCTION: {int(self.boss.damage_reduction * 100)}%  "
+        if self.boss.regen > 0:
+            stats_str += f"REGEN: +{self.boss.regen}/turn"
+        if stats_str:
+            stats_surf = self.font_small.render(stats_str, True, (180, 120, 120))
+            self.screen.blit(stats_surf, stats_surf.get_rect(
+                centerx=self.W // 2, top=bar_y + bar_h + 30))
 
         plays_surf = self.font_small.render(f"PLAYS LEFT: {self.plays_remaining}", True, NEON_TEAL)
         self.screen.blit(plays_surf, plays_surf.get_rect(topleft=(20, 80 + gimmick_panel_h + 10)))
@@ -414,9 +423,21 @@ class GameScene:
 
     def _play_turn(self):
 
-
         if self.anim_phase != 0:
             return
+
+        # bleed tick
+        if self.boss.bleed_stacks > 0:
+            bleed_dmg = self.boss.bleed_stacks * 10
+            self.boss.hp -= bleed_dmg
+            self.debug_event = f"BLEED TICK -{bleed_dmg} ({self.boss.bleed_stacks} stacks)"
+            self.debug_event_timer = 120
+
+        # boss regen
+        if self.boss.regen > 0:
+            self.boss.hp = min(self.boss.max_hp, self.boss.hp + self.boss.regen)
+            self.debug_event = f"BOSS REGEN +{self.boss.regen}"
+            self.debug_event_timer = 120
 
         if not self.selected:
             self.message = "No cards selected!"
@@ -475,7 +496,9 @@ class GameScene:
             self.anim_card_targets.append([float(start_tx + i * (CARD_W + CARD_GAP)), float(target_y)])
 
         # apply damage AFTER capturing display hp
-        self.boss.hp -= self.anim_dmg
+        actual_dmg = int(self.anim_dmg * (1 - self.boss.damage_reduction))
+        self.boss.hp -= actual_dmg
+        self.anim_dmg = actual_dmg  # update so animation shows correct value
 
         # remove cards from hand immediately
         for card in cards:

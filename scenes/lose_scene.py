@@ -1,6 +1,7 @@
 # scenes/lose_scene.py
-import pygame
 import math
+from settings import *
+import pygame
 import random
 
 class LoseScene:
@@ -21,6 +22,11 @@ class LoseScene:
 
         self.tick      = 0
         self.particles = [self._new_particle() for _ in range(80)]
+
+        pygame.mixer.music.stop()
+        self.sound_lose = pygame.mixer.Sound(resource_path("assets/audio/sfx/lose.wav"))
+        self.sound_lose.set_volume(0.7)
+        self.sound_lose.play()
 
     def _new_particle(self):
         return {

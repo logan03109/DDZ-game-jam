@@ -33,6 +33,8 @@ BOSS_CONFIGS = [
         "hand_size": 10,
         "max_plays": 5,
         "max_shuffles": 3,
+        "damage_reduction": 0,      # 0 = no reduction, 0.2 = 20% reduction
+        "regen": 0,
         "allowed_sets": [
             "single",
             "double"
@@ -44,6 +46,8 @@ BOSS_CONFIGS = [
         "hand_size": 15,
         "max_plays": 5,
         "max_shuffles": 3,
+        "damage_reduction": 0,      # 0 = no reduction, 0.2 = 20% reduction
+        "regen": 0,
         "allowed_sets": [
             "single",
             "double",
@@ -60,6 +64,8 @@ BOSS_CONFIGS = [
         "hand_size": 20,
         "max_plays": 5,
         "max_shuffles": 3,
+        "damage_reduction": 0,      # 0 = no reduction, 0.2 = 20% reduction
+        "regen": 0,                  # hp regained per player turn
         "allowed_sets": [
             "single",
             "double",
