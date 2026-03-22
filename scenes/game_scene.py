@@ -808,8 +808,6 @@ class GameScene:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_d:
                 self.debug_mode = not self.debug_mode
-            if event.key == pygame.K_k:  # ADD
-                self.boss.hp = 0
         if self.show_tutorial:
             if event.type == pygame.MOUSEMOTION:
                 self.tutorial_ok_hovered = self.tutorial_ok_btn.collidepoint(event.pos)
