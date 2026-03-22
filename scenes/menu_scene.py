@@ -35,6 +35,8 @@ class MenuScene:
         pygame.mixer.music.load(resource_path("assets/audio/music/Main Menu GDLTDDZ.wav"))
         pygame.mixer.music.set_volume(0.5)
         pygame.mixer.music.play(-1)  # -1 loops forever
+
+        self.font_version = pygame.font.SysFont("couriernew", FONT_SIZE_VERSION, bold=True)
     # ── helpers ───────────────────────────────────────────────
     def _new_particle(self):
         """A small drifting card-suit symbol in the background."""
@@ -56,7 +58,6 @@ class MenuScene:
             p["y"] -= p["speed"]
             if p["y"] < -40:
                 p.update(self._new_particle())
-
     def _draw_title(self):
         """Title with cyan/magenta glitch offset on alternate frames."""
         title = "The Eye"
@@ -191,3 +192,5 @@ class MenuScene:
         self._draw_button()
         self._draw_exit_button()
         self._draw_settings_button()
+        version_surf = self.font_version.render(GAME_VERSION, True, (80, 80, 100))
+        self.screen.blit(version_surf, (10, self.H - 40))

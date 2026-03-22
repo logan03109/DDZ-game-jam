@@ -6,6 +6,8 @@ def resource_path(relative_path):
         return os.path.join(sys._MEIPASS, relative_path)
     return os.path.join(os.path.abspath("."), relative_path)
 # data
+
+GAME_VERSION = "V1.1"
 suits = ["Hearts", "Spades", "Diamonds", "Clubs"]  # suits
 values = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]  # values, excluding jokers
 sets_list = ["single", "double", "triple", "triple+1", "triple+2", "bomb", "single_straight", "double_straight",
@@ -115,3 +117,9 @@ FONT_SIZE_NORMAL = 24
 FONT_SIZE_UI     = 27
 FONT_SIZE_MSG    = 36
 FONT_SIZE_TITLE  = 60
+FONT_SIZE_VERSION = 28
+
+# Volume settings
+MASTER_VOLUME = 1.0
+MUSIC_VOLUME  = 0.5
+SFX_VOLUME    = 0.5

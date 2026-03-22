@@ -2,6 +2,7 @@
 from entities.player import Player, validate_set, Deck, damage_calc
 from entities.npc1 import Boss
 from settings import *
+import settings as settings_module
 import pygame
 import random
 # Card dimensions
@@ -160,9 +161,13 @@ class GameScene:
             self.img_play = None
             self.img_sort = None
             self.img_shuffle = None
+
+        self._apply_sfx_volume()
+
+        self.font_version = pygame.font.SysFont("couriernew", FONT_SIZE_VERSION, bold=True)
     # ── drawing helpers ───────────────────────────────────────
 
-    def _draw_card(self, card, x, y, selected):
+    def _draw_card(self, card, x, y, selected, gimmick_card=None):
         """Draw a single card at (x, y), lifted if selected."""
         draw_y = y - 20 if selected else y
 
@@ -196,6 +201,11 @@ class GameScene:
             sym_surf = self.font_card_sym.render(sym,        True, col)
             self.screen.blit(val_surf, (x + 6, draw_y + 5))
             self.screen.blit(sym_surf, (x + 6, draw_y + 24))
+        if gimmick_card and card.value == gimmick_card:
+            indicator_x = x + CARD_W - 10
+            indicator_y = draw_y + 10
+            pygame.draw.circle(self.screen, (220, 175, 50), (indicator_x, indicator_y), 8)
+            pygame.draw.circle(self.screen, (255, 220, 80), (indicator_x, indicator_y), 8, 2)
 
         # Return the rect for click detection (use un-lifted y for consistency)
         return pygame.Rect(x, y, CARD_W, CARD_H)
@@ -219,7 +229,9 @@ class GameScene:
         for i, card in enumerate(visible_hand):
             actual_index = i + self.hand_scroll  # real index in full hand
             x = start_x + i * (CARD_W + CARD_GAP)
-            rect = self._draw_card(card, x, base_y, selected=(actual_index in self.selected))
+            rect = self._draw_card(card, x, base_y,
+                                   selected=(actual_index in self.selected),
+                                   gimmick_card=self.player.gimmick_card)
             self.card_rects.append((actual_index, rect))  # store actual index with rect
 
         # draw scroll arrows if needed
@@ -314,12 +326,18 @@ class GameScene:
                     centerx=self.W // 2, centery=self.H - CARD_H - 140))
 
     def _draw_info(self):
+        # Version display — top left
+        version_surf = self.font_version.render(GAME_VERSION, True, GREY)
+        self.screen.blit(version_surf, (10, 10))
         # Card counter — top left
-        pygame.draw.rect(self.screen, PANEL_COL, (20, 20, 200, 50), border_radius=8)
-        pygame.draw.rect(self.screen, BORDER_COL, (20, 20, 200, 50), 1, border_radius=8)
-        card_count = self.font_small.render(
-            f"CARDS LEFT: {len(self.deck.deck) + len(self.player.hand.hand)}", True, WHITE)
-        self.screen.blit(card_count, card_count.get_rect(center=(120, 45)))
+        stats = [
+            ("CARDS", len(self.deck.deck) + len(self.player.hand.hand), WHITE),
+            ("HAND", len(self.player.hand.hand), NEON_TEAL),
+            ("DECK", len(self.deck.deck), GREY),
+            ("PLAYS", self.plays_remaining, NEON_TEAL),
+            ("SHUFFLES", self.shuffles_remaining, (200, 80, 255)),
+        ]
+        self._draw_stat_panel(20, 200, 200, stats)
 
         # Active gimmicks panel
         gimmick_panel_h = max(50, 20 + len(self.player.active_gimmicks) * 18)
@@ -399,9 +417,11 @@ class GameScene:
     def _load_next_boss(self):
         config = BOSS_CONFIGS[self.boss_index]
         self.boss = Boss(config)
+        self.boss_sprite = self._load_boss_sprite()
         self.allowed_sets = config["allowed_sets"]
         self.player_hand_size = config["hand_size"]
-        self.player.hand_size = config["hand_size"]
+        self.player.hand_size = config["hand_size"] + (
+                    self.player.hand_size - self.player_hand_size)  # preserve gimmick bonus
         self.plays_remaining = config["max_plays"]
         self.shuffles_remaining = config["max_shuffles"] + self.player.bonus_shuffles
         self.bg_image = self._load_bg()
@@ -446,6 +466,21 @@ class GameScene:
         surf = pygame.Surface((w, h), pygame.SRCALPHA)
         surf.fill(colour)
         return surf
+
+    def _draw_stat_panel(self, x, y, w, stats):
+        """
+        stats is a list of (label, value, colour) tuples.
+        Easy to add more by extending the list passed in.
+        """
+        line_h = FONT_SIZE_SMALL + 6
+        panel_h = len(stats) * line_h + 20
+        pygame.draw.rect(self.screen, PANEL_COL, (x, y, w, panel_h), border_radius=8)
+        pygame.draw.rect(self.screen, BORDER_COL, (x, y, w, panel_h), 1, border_radius=8)
+        for i, (label, value, col) in enumerate(stats):
+            line = f"{label}: {value}"
+            surf = self.font_small.render(line, True, col)
+            self.screen.blit(surf, surf.get_rect(
+                centerx=x + w // 2, top=y + 10 + i * line_h))
     # ── game logic ────────────────────────────────────────────
 
     def _play_turn(self):
@@ -631,11 +666,11 @@ class GameScene:
     def _draw_played_cards(self):
         if self.anim_phase != 1 or not self.anim_cards:
             return
-
         for i, card in enumerate(self.anim_cards):
             x = int(self.anim_card_positions[i][0])
             y = int(self.anim_card_positions[i][1])
-            self._draw_card(card, x, y, selected=False)
+            self._draw_card(card, x, y, selected=False,
+                            gimmick_card=self.player.gimmick_card)
 
     def _apply_gimmick_card_effect(self, value):
         effect = GIMMICK_CARD_CONFIGS[value]["effect"]
@@ -663,6 +698,13 @@ class GameScene:
             return sprite
         except:
             return self._make_placeholder(80, 120, (180, 40, 40))
+
+    def _apply_sfx_volume(self):
+        vol = settings_module.SFX_VOLUME * settings_module.MASTER_VOLUME
+        self.sound_card_pickup.set_volume(vol)
+        self.sound_invalid.set_volume(vol)
+        self.sound_attack_small.set_volume(vol)
+        self.sound_attack_big.set_volume(vol)
 
     # ── scene interface ───────────────────────────────────────
 
@@ -728,6 +770,7 @@ class GameScene:
         return None
 
     def update(self, dt):
+        self._apply_sfx_volume()
         if self.anim_phase == 1:
             self.anim_timer -= 1
             all_arrived = True
@@ -755,15 +798,34 @@ class GameScene:
                     self.anim_boss_hp_display - self.ANIM_HP_SPEED
                 )
 
+            # build full calculation string
             highest = max(card.numeric_rank() for card in self.anim_cards)
             base = base_damage_constant[self.anim_ddz_set]
-            mult = self.player.damage_mult
+            parts = [str(highest), f"x {base}"]
+
+            # damage multiplier gimmick
+            if self.player.damage_mult != 1:
+                parts.append(f"x {round(self.player.damage_mult, 2)}")
+
+            # gambling roll
             if self.anim_roll is not None:
-                self.message = f"{self.anim_ddz_set.upper()}!  {highest} x {base} x {round(self.anim_roll, 1)} = {self.anim_dmg}"
-            elif mult != 1:
-                self.message = f"{self.anim_ddz_set.upper()}!  {highest} x {base} x {round(mult, 2)} = {self.anim_dmg}"
-            else:
-                self.message = f"{self.anim_ddz_set.upper()}!  {highest} x {base} = {self.anim_dmg}"
+                parts.append(f"x {round(self.anim_roll, 1)} [GAMBLE]")
+
+            # boss damage reduction
+            if self.boss.damage_reduction > 0:
+                parts.append(f"x {round(1 - self.boss.damage_reduction, 2)} [BOSS DEF]")
+
+            # gimmick card boost
+            if self.player.gimmick_card and any(
+                    card.value == self.player.gimmick_card for card in self.anim_cards):
+                effect = GIMMICK_CARD_CONFIGS[self.player.gimmick_card]["effect"]
+                if effect == "dmg_boost":
+                    parts.append("x 1.5 [CARD BOOST]")
+                elif effect == "bleed":
+                    parts.append(f"+ {self.boss.bleed_stacks * 10} [BLEED]")
+
+            parts.append(f"= {self.anim_dmg}")
+            self.message = f"{self.anim_ddz_set.upper()}!  {'  '.join(parts)}"
             self.msg_col = NEON_TEAL
 
             if self.anim_timer <= 0:

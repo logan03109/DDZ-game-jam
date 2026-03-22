@@ -2,6 +2,7 @@
 import pygame
 import math
 import random
+from settings import *
 
 from settings import FONT_SIZE_TITLE, FONT_SIZE_NORMAL, FONT_SIZE_UI
 class WinScene:
@@ -22,6 +23,12 @@ class WinScene:
 
         self.tick       = 0
         self.particles  = [self._new_particle() for _ in range(80)]
+
+        # in win_scene.py __init__
+        pygame.mixer.music.stop()
+        pygame.mixer.music.load(resource_path("assets/audio/music/win.wav"))
+        pygame.mixer.music.set_volume(0.5)
+        pygame.mixer.music.play(-1)  # -1 loops forever
 
     def _new_particle(self):
         return {
