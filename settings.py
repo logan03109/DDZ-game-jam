@@ -7,7 +7,7 @@ def resource_path(relative_path):
     return os.path.join(os.path.abspath("."), relative_path)
 # data
 
-GAME_VERSION = "V1.1"
+GAME_VERSION = "V1.4"
 suits = ["Hearts", "Spades", "Diamonds", "Clubs"]  # suits
 values = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]  # values, excluding jokers
 sets_list = ["single", "double", "triple", "triple+1", "triple+2", "bomb", "single_straight", "double_straight",
