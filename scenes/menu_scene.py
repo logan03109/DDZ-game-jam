@@ -33,7 +33,9 @@ class MenuScene:
 
         # Music
         pygame.mixer.music.load(resource_path("assets/audio/music/Main Menu GDLTDDZ.wav"))
-        pygame.mixer.music.set_volume(0.5)
+        import settings as settings_module
+
+        pygame.mixer.music.set_volume(settings_module.MUSIC_VOLUME * settings_module.MASTER_VOLUME)
         pygame.mixer.music.play(-1)  # -1 loops forever
 
         self.font_version = pygame.font.SysFont("couriernew", FONT_SIZE_VERSION, bold=True)

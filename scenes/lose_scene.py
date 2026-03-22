@@ -25,7 +25,11 @@ class LoseScene:
         self.player = player
         pygame.mixer.music.stop()
         self.sound_lose = pygame.mixer.Sound(resource_path("assets/audio/sfx/lose.wav"))
-        self.sound_lose.set_volume(0.7)
+        pygame.mixer.music.load(resource_path("assets/audio/music/cutscene_audio.wav"))
+        import settings as settings_module
+
+        pygame.mixer.music.set_volume(settings_module.MUSIC_VOLUME * settings_module.MASTER_VOLUME)
+        pygame.mixer.music.play()
         self.sound_lose.play()
         try:
             self.bg_image = pygame.image.load(resource_path("assets/images/backgrounds/lose screen.png")).convert()
@@ -71,13 +75,10 @@ class LoseScene:
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.new_game_btn.collidepoint(event.pos):
                 from scenes.game_scene import GameScene
-                return GameScene(self.screen, self.W, self.H)
+                return GameScene(self.screen, self.W, self.H, self.player)
             if self.menu_btn.collidepoint(event.pos):
                 from scenes.menu_scene import MenuScene
                 return MenuScene(self.screen, self.W, self.H)
-        if self.new_game_btn.collidepoint(event.pos):
-            from scenes.game_scene import GameScene
-            return GameScene(self.screen, self.W, self.H, self.player)
 
         return None
 
@@ -125,7 +126,8 @@ class LoseScene:
             lines.append("  none")
 
         if self.player.gimmick_card:
-            lines.append(f"  CARD GIMMICK: {self.player.gimmick_card}")
+            for gc in self.player.gimmick_card:
+                lines.append(f"  CARD GIMMICK: {gc}")
 
         panel_w = 300
         panel_h = len(lines) * 22 + 20

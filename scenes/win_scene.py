@@ -27,7 +27,9 @@ class WinScene:
         # in win_scene.py __init__
         pygame.mixer.music.stop()
         pygame.mixer.music.load(resource_path("assets/audio/music/win.wav"))
-        pygame.mixer.music.set_volume(0.5)
+        import settings as settings_module
+
+        pygame.mixer.music.set_volume(settings_module.MUSIC_VOLUME * settings_module.MASTER_VOLUME)
         pygame.mixer.music.play(-1)  # -1 loops forever
 
     def _new_particle(self):

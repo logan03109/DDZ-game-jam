@@ -12,6 +12,10 @@ class SettingsScene:
         self.H               = H
         self.previous_scene  = previous_scene  # scene to return to
 
+        import settings as settings_module
+
+        pygame.mixer.music.set_volume(settings_module.MUSIC_VOLUME * settings_module.MASTER_VOLUME)
+
         self.font_title = pygame.font.SysFont("couriernew", 60, bold=True)
         self.font_btn   = pygame.font.SysFont("couriernew", 26, bold=True)
         self.font_small = pygame.font.SysFont("couriernew", 16)

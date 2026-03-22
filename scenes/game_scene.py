@@ -114,7 +114,7 @@ class GameScene:
 
         # Music
         pygame.mixer.music.load(resource_path("assets/audio/music/GDLTDDZ unfinished.wav"))
-        pygame.mixer.music.set_volume(0.5)
+        pygame.mixer.music.set_volume(settings_module.MUSIC_VOLUME * settings_module.MASTER_VOLUME)
         pygame.mixer.music.play(-1)
 
         self.anim_card_positions = []  # current x,y positions of animating cards
@@ -130,8 +130,8 @@ class GameScene:
         self.anim_roll = None
         self.anim_boss_hp_display = 0  # the HP shown on the bar during animation
         self.ANIM_SHOW_CARDS = 40  # frames to show played cards
-        self.ANIM_SHOW_DAMAGE = 20  # frames to show damage calculation
-        self.ANIM_HP_SPEED = 1  # hp drained per frame during animation
+        self.ANIM_SHOW_DAMAGE = 50  # frames to show damage calculation
+        self.ANIM_HP_SPEED = 4  # hp drained per frame during animation
 
         # Background image
         self.bg_image = self._load_bg()
@@ -165,6 +165,12 @@ class GameScene:
         self._apply_sfx_volume()
 
         self.font_version = pygame.font.SysFont("couriernew", FONT_SIZE_VERSION, bold=True)
+
+        self.anim_bleed_applied = False
+
+        self.anim_dmg_pre_boost = 0
+        self.anim_dmg_boost_applied = False
+        self.anim_bleed_applied = False
     # ── drawing helpers ───────────────────────────────────────
 
     def _draw_card(self, card, x, y, selected, gimmick_card=None):
@@ -201,7 +207,7 @@ class GameScene:
             sym_surf = self.font_card_sym.render(sym,        True, col)
             self.screen.blit(val_surf, (x + 6, draw_y + 5))
             self.screen.blit(sym_surf, (x + 6, draw_y + 24))
-        if gimmick_card and card.value == gimmick_card:
+        if gimmick_card and card.value in gimmick_card:
             indicator_x = x + CARD_W - 10
             indicator_y = draw_y + 10
             pygame.draw.circle(self.screen, (220, 175, 50), (indicator_x, indicator_y), 8)
@@ -307,6 +313,13 @@ class GameScene:
         self.msg_col = (200, 80, 255)
 
     def _draw_message(self):
+        # plays remaining — always shown above
+        plays_msg = f"{self.plays_remaining} plays left"
+        plays_surf = self.font_msg.render(plays_msg, True, GREY)
+        self.screen.blit(plays_surf, plays_surf.get_rect(
+            centerx=self.W // 2, centery=self.H - CARD_H - 230))
+
+        # calculation message below
         if self.message:
             parts = self.message.split("  |  ")
             if len(parts) == 2:
@@ -340,20 +353,30 @@ class GameScene:
         self._draw_stat_panel(20, 200, 200, stats)
 
         # Active gimmicks panel
-        gimmick_panel_h = max(50, 20 + len(self.player.active_gimmicks) * 18)
+        all_modifiers = list(self.player.active_gimmicks)
+        for gc in self.player.gimmick_card:
+            all_modifiers.append(f"card:{gc}")
+
+        gimmick_panel_h = max(50, 20 + len(all_modifiers) * 18)
         pygame.draw.rect(self.screen, PANEL_COL, (20, 80, 200, gimmick_panel_h), border_radius=8)
         pygame.draw.rect(self.screen, BORDER_COL, (20, 80, 200, gimmick_panel_h), 1, border_radius=8)
 
         title_surf = self.font_small.render("MODIFIERS", True, GOLD)
         self.screen.blit(title_surf, title_surf.get_rect(centerx=120, top=86))
 
-        if not self.player.active_gimmicks:
+        if not all_modifiers:
             none_surf = self.font_small.render("none", True, GREY)
             self.screen.blit(none_surf, none_surf.get_rect(centerx=120, top=104))
         else:
-            for i, g in enumerate(self.player.active_gimmicks):
-                label = g.upper().replace("_", " ")
-                g_surf = self.font_small.render(f"+ {label}", True, NEON_TEAL)
+            for i, g in enumerate(all_modifiers):
+                if g.startswith("card:"):
+                    val = g.split(":")[1]
+                    label = f"CARD GIMMICK: {val}"
+                    col = GOLD
+                else:
+                    label = g.upper().replace("_", " ")
+                    col = NEON_TEAL
+                g_surf = self.font_small.render(f"+ {label}", True, col)
                 self.screen.blit(g_surf, g_surf.get_rect(topleft=(30, 104 + i * 18)))
 
         # Boss health bar — top centre
@@ -388,6 +411,19 @@ class GameScene:
             self.screen.blit(stats_surf, stats_surf.get_rect(
                 centerx=self.W // 2, top=bar_y + bar_h + 30))
 
+        # bleed indicator — ADD HERE
+        if self.boss.bleed_stacks > 0:
+            bleed_surf = self.font_small.render(
+                f"BLEEDING x{self.boss.bleed_stacks} (-{self.boss.bleed_stacks * 10}/turn)",
+                True, (220, 60, 60))
+            bleed_surf_bg = pygame.Surface(
+                (bleed_surf.get_width() + 16, bleed_surf.get_height() + 8), pygame.SRCALPHA)
+            bleed_surf_bg.fill((60, 10, 10, 180))
+            bleed_rect = bleed_surf_bg.get_rect(centerx=self.W // 2, top=bar_y + bar_h + 48)
+            self.screen.blit(bleed_surf_bg, bleed_rect)
+            self.screen.blit(bleed_surf, bleed_surf.get_rect(
+                centerx=self.W // 2, top=bar_y + bar_h + 52))
+
         plays_surf = self.font_small.render(f"PLAYS LEFT: {self.plays_remaining}", True, NEON_TEAL)
         self.screen.blit(plays_surf, plays_surf.get_rect(topleft=(20, 80 + gimmick_panel_h + 10)))
 
@@ -415,13 +451,13 @@ class GameScene:
             self.next_boss_timer = self.NEXT_BOSS_DELAY
 
     def _load_next_boss(self):
+        print(f"gimmick_card before load: {self.player.gimmick_card}")
         config = BOSS_CONFIGS[self.boss_index]
         self.boss = Boss(config)
         self.boss_sprite = self._load_boss_sprite()
         self.allowed_sets = config["allowed_sets"]
         self.player_hand_size = config["hand_size"]
-        self.player.hand_size = config["hand_size"] + (
-                    self.player.hand_size - self.player_hand_size)  # preserve gimmick bonus
+        self.player.hand_size = config["hand_size"] + self.player.hand_size_bonus
         self.plays_remaining = config["max_plays"]
         self.shuffles_remaining = config["max_shuffles"] + self.player.bonus_shuffles
         self.bg_image = self._load_bg()
@@ -437,6 +473,7 @@ class GameScene:
         self.player.hand.hand.sort(key=lambda card: card.numeric_rank())
         self.selected = set()
         self.show_tutorial = True
+        print(f"gimmick_card after load: {self.player.gimmick_card}")
 
     def _draw_sprites(self):
         hand_top = self.H - CARD_H - 100
@@ -481,12 +518,38 @@ class GameScene:
             surf = self.font_small.render(line, True, col)
             self.screen.blit(surf, surf.get_rect(
                 centerx=x + w // 2, top=y + 10 + i * line_h))
+
+    def _build_calc_string(self):
+        highest = max(card.numeric_rank() for card in self.anim_cards)
+        base = base_damage_constant[self.anim_ddz_set]
+        mult = self.player.damage_mult
+        parts = [str(highest), f"x {base}"]
+        if mult != 1:
+            parts.append(f"x {round(mult, 2)}")
+        if self.anim_roll is not None:
+            parts.append(f"x {round(self.anim_roll, 1)} [GAMBLE]")
+        if self.boss.damage_reduction > 0:
+            parts.append(f"x {round(1 - self.boss.damage_reduction, 2)} [BOSS DEF]")
+        # gimmick card boost
+        # replace the entire gimmick card boost block with these two separate checks
+        if self.anim_dmg_boost_applied:
+            parts.append(f"x 1.5 [CARD BOOST]")
+
+        if self.anim_bleed_applied:
+            parts.append(f"[BLEED x{self.boss.bleed_stacks}]")
+        parts.append(f"= {self.anim_dmg}")
+        return f"{self.anim_ddz_set.upper()}!  {'  '.join(parts)}"
     # ── game logic ────────────────────────────────────────────
 
     def _play_turn(self):
         if self.anim_phase != 0:
             return
 
+        self.anim_dmg_pre_boost = 0
+        self.anim_dmg_boost_applied = False
+
+        self.anim_bleed_dmg = 0
+        self.anim_bleed_applied = False
         # bleed tick
         if self.boss.bleed_stacks > 0:
             bleed_dmg = self.boss.bleed_stacks * 10
@@ -562,12 +625,14 @@ class GameScene:
         self.anim_dmg = actual_dmg
 
         # apply gimmick card effect
-        if self.player.gimmick_card:
+        print(f"checking gimmick card: player.gimmick_card={self.player.gimmick_card}")
+        print(f"cards played: {[c.value for c in cards]}")
+        # apply gimmick card effects for all active gimmick cards
+        for gimmick_val in self.player.gimmick_card:
             for card in cards:
-                if card.value == self.player.gimmick_card:
-                    self._apply_gimmick_card_effect(card.value)
+                if card.value == gimmick_val:
+                    self._apply_gimmick_card_effect(gimmick_val)
                     break
-
         # remove cards from hand
         for card in cards:
             self.player.hand.hand.remove(card)
@@ -579,11 +644,14 @@ class GameScene:
 
         self.player.hand.hand.sort(key=lambda card: card.numeric_rank())
 
-        if self.plays_remaining == 1 and self.boss.hp > 0:
-            self.trigger_lose = True
-
         self.plays_remaining -= 1
         self.selected = set()
+
+        # check lose AFTER decrementing plays and AFTER boss death is known
+        if self.plays_remaining <= 0 and self.boss.hp > 0:
+            self.trigger_lose = True
+        else:
+            self.trigger_lose = False
 
     def _draw_settings_button(self):
         col = (20, 20, 40) if self.settings_hovered else (10, 10, 20)
@@ -676,12 +744,18 @@ class GameScene:
         effect = GIMMICK_CARD_CONFIGS[value]["effect"]
         if effect == "bleed":
             self.boss.bleed_stacks += 1
+            self.anim_bleed_applied = True
+            self.anim_bleed_dmg = self.boss.bleed_stacks * 10
             self.debug_event = f"BLEED APPLIED x{self.boss.bleed_stacks}"
             self.debug_event_timer = 120
         elif effect == "dmg_boost":
-            self.anim_dmg = int(self.anim_dmg * 1.5)
-            self.boss.hp -= int(self.anim_dmg * 0.5)  # apply the bonus damage
-            self.message += "  DMG BOOST!"
+            bonus = int(self.anim_dmg * 0.5)
+            self.boss.hp -= bonus
+            self.anim_dmg_pre_boost = self.anim_dmg  # store pre-boost value
+            self.anim_dmg += bonus
+            self.anim_dmg_boost_applied = True
+            self.debug_event = f"DMG BOOST +{bonus}"
+            self.debug_event_timer = 120
         elif effect == "plays_up":
             if random.randint(0, 1) == 1:
                 self.plays_remaining += 1
@@ -782,6 +856,10 @@ class GameScene:
                 self.anim_card_positions[i] = [new_x, new_y]
                 if abs(new_x - tx) > 1 or abs(new_y - ty) > 1:
                     all_arrived = False
+
+            # no message building here — clear it while cards move
+            self.message = ""
+
             if self.anim_timer <= 0 or all_arrived:
                 for i in range(len(self.anim_card_positions)):
                     self.anim_card_positions[i] = list(self.anim_card_targets[i])
@@ -798,54 +876,23 @@ class GameScene:
                     self.anim_boss_hp_display - self.ANIM_HP_SPEED
                 )
 
-            # build full calculation string
-            highest = max(card.numeric_rank() for card in self.anim_cards)
-            base = base_damage_constant[self.anim_ddz_set]
-            parts = [str(highest), f"x {base}"]
-
-            # damage multiplier gimmick
-            if self.player.damage_mult != 1:
-                parts.append(f"x {round(self.player.damage_mult, 2)}")
-
-            # gambling roll
-            if self.anim_roll is not None:
-                parts.append(f"x {round(self.anim_roll, 1)} [GAMBLE]")
-
-            # boss damage reduction
-            if self.boss.damage_reduction > 0:
-                parts.append(f"x {round(1 - self.boss.damage_reduction, 2)} [BOSS DEF]")
-
-            # gimmick card boost
-            if self.player.gimmick_card and any(
-                    card.value == self.player.gimmick_card for card in self.anim_cards):
-                effect = GIMMICK_CARD_CONFIGS[self.player.gimmick_card]["effect"]
-                if effect == "dmg_boost":
-                    parts.append("x 1.5 [CARD BOOST]")
-                elif effect == "bleed":
-                    parts.append(f"+ {self.boss.bleed_stacks * 10} [BLEED]")
-
-            parts.append(f"= {self.anim_dmg}")
-            self.message = f"{self.anim_ddz_set.upper()}!  {'  '.join(parts)}"
+            self.message = self._build_calc_string()
             self.msg_col = NEON_TEAL
 
             if self.anim_timer <= 0:
                 self.anim_boss_hp_display = self.boss.hp
                 self.anim_phase = 0
-                self.message = f"{self.plays_remaining} plays left"
-                self.msg_col = GREY
 
                 if self.boss.hp <= 0:
                     self._next_boss()
-
+                elif self.trigger_lose:  # only check lose if boss is NOT dead
+                    from scenes.lose_scene import LoseScene
+                    return LoseScene(self.screen, self.W, self.H, self.player)
             return None
-
         # normal update
-        if self.trigger_lose:
-            from scenes.lose_scene import LoseScene
-            return LoseScene(self.screen, self.W, self.H, self.player)
         if self.pending_win:
-            from scenes.lose_cutscene import LoseCutScene
-            return LoseCutScene(self.screen, self.W, self.H)
+            from scenes.win1_cutscene import WinCutScene1
+            return WinCutScene1(self.screen, self.W, self.H)
         if self.pending_next_boss:
             self.pending_next_boss = False
             self._load_next_boss()

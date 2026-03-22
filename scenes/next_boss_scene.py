@@ -12,6 +12,10 @@ class NextBossScene:
         self.boss_index = boss_index
         self.game_state = game_state
 
+        import settings as settings_module
+
+        pygame.mixer.music.set_volume(settings_module.MUSIC_VOLUME * settings_module.MASTER_VOLUME)
+
         self.font_title   = pygame.font.SysFont("couriernew", 50, bold=True)
         self.font_sub     = pygame.font.SysFont("couriernew", 20)
         self.font_btn     = pygame.font.SysFont("couriernew", 24, bold=True)
@@ -72,15 +76,7 @@ class NextBossScene:
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEMOTION:
-            self.play_hovered = self.play_btn.collidepoint(event.pos)
-            self.gimmick_hovered = None
-            self.gimmick_card_hovered = None
-            for g, rect in self.gimmick_btns:
-                if rect.collidepoint(event.pos):
-                    self.gimmick_hovered = g
-            for val, cfg, rect in self.gimmick_card_btns:
-                if rect.collidepoint(event.pos):
-                    self.gimmick_card_hovered = val
+            ...
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             for g, rect in self.gimmick_btns:
@@ -95,8 +91,11 @@ class NextBossScene:
             if self.play_btn.collidepoint(event.pos) and self.selected_gimmick:
                 self.game_state.player.apply_gimmick(self.selected_gimmick, self.game_state.deck)
                 if self.selected_gimmick_card:
-                    self.game_state.player.gimmick_card = self.selected_gimmick_card
+                    if self.selected_gimmick_card not in self.game_state.player.gimmick_card:
+                        self.game_state.player.gimmick_card.append(self.selected_gimmick_card)
                 return self.game_state
+
+        return None  # ADD THIS
 
     def update(self, dt):
         self.tick += 1
@@ -128,8 +127,8 @@ class NextBossScene:
         # Gimmick buttons
         for g, rect in self.gimmick_btns:
             is_selected = self.selected_gimmick == g
-            is_hovered  = self.gimmick_hovered  == g
-            already_owned = g in self.game_state.player.active_gimmicks
+            is_hovered = self.gimmick_hovered == g
+            already_owned = g in self.game_state.player.active_gimmicks  # use g, not val
 
             if is_selected:
                 bg_col     = (0, 60, 55)
@@ -184,7 +183,7 @@ class NextBossScene:
         for val, cfg, rect in self.gimmick_card_btns:
             is_selected = self.selected_gimmick_card == val
             is_hovered = self.gimmick_card_hovered == val
-            already_owned = self.game_state.player.gimmick_card == val
+            already_owned = val in self.game_state.player.gimmick_card
 
             if already_owned:
                 bg_col = (20, 20, 20)

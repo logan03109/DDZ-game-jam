@@ -11,6 +11,12 @@ class EndCutScene:
 
         self.font_small = pygame.font.SysFont("couriernew", FONT_SIZE_SMALL)
 
+        pygame.mixer.music.load(resource_path("assets/audio/music/cutscene_audio.wav"))
+        import settings as settings_module
+
+        pygame.mixer.music.set_volume(settings_module.MUSIC_VOLUME * settings_module.MASTER_VOLUME)
+        pygame.mixer.music.play()
+
         # load video
         self.cap             = cv2.VideoCapture(resource_path("assets/end_cutscene.mp4"))
         self.fps             = self.cap.get(cv2.CAP_PROP_FPS)

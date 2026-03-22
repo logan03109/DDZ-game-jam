@@ -26,6 +26,9 @@ class CutScene:
 
         # in __init__ after loading the video
         pygame.mixer.music.load(resource_path("assets/audio/music/cutscene_audio.wav"))
+        import settings as settings_module
+
+        pygame.mixer.music.set_volume(settings_module.MUSIC_VOLUME * settings_module.MASTER_VOLUME)
         pygame.mixer.music.play()
 
     def on_resize(self, W, H):

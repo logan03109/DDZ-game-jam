@@ -1,9 +1,9 @@
-# scenes/lose_cutscene.py
+# scenes/win1_cutscene.py
 import pygame
 import cv2
 from settings import resource_path, FONT_SIZE_SMALL
 
-class LoseCutScene:
+class WinCutScene:
     def __init__(self, screen, W, H, player=None):
         self.screen = screen
         self.W      = W
@@ -11,6 +11,10 @@ class LoseCutScene:
         self.player = player   # pass through to lose scene
 
         self.font_small = pygame.font.SysFont("couriernew", FONT_SIZE_SMALL)
+
+        import settings as settings_module
+
+        pygame.mixer.music.set_volume(settings_module.MUSIC_VOLUME * settings_module.MASTER_VOLUME)
 
         # load video
         self.cap             = cv2.VideoCapture(resource_path("assets/lose_cutscene.mp4"))

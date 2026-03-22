@@ -13,7 +13,9 @@ class Player:
         self.hand_size = hand_size
         self.bonus_shuffles = 0
 
-        self.gimmick_card = None
+        self.gimmick_card = []   # list of active gimmick card values
+
+        self.hand_size_bonus = 0
 
     def pick_cards(
             self):  # i avoided doing this because this will certainly require pygame consideration, and is not useful for python console testing
@@ -49,6 +51,7 @@ class Player:
             pass  # effect applied per play in damage_calc
         elif gimmick == "hand_size_up":
             self.hand_size += GIMMICK_VALUES["hand_size_up"]
+            self.hand_size_bonus += GIMMICK_VALUES["hand_size_up"]  # ADD
             if deck:
                 for _ in range(GIMMICK_VALUES["hand_size_up"]):
                     if deck.deck:
