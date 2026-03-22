@@ -171,6 +171,9 @@ class GameScene:
         self.anim_dmg_pre_boost = 0
         self.anim_dmg_boost_applied = False
         self.anim_bleed_applied = False
+
+        self.gimmick_notification = ""
+        self.gimmick_notification_timer = 0
     # ── drawing helpers ───────────────────────────────────────
 
     def _draw_card(self, card, x, y, selected, gimmick_card=None):
@@ -451,7 +454,6 @@ class GameScene:
             self.next_boss_timer = self.NEXT_BOSS_DELAY
 
     def _load_next_boss(self):
-        print(f"gimmick_card before load: {self.player.gimmick_card}")
         config = BOSS_CONFIGS[self.boss_index]
         self.boss = Boss(config)
         self.boss_sprite = self._load_boss_sprite()
@@ -473,7 +475,6 @@ class GameScene:
         self.player.hand.hand.sort(key=lambda card: card.numeric_rank())
         self.selected = set()
         self.show_tutorial = True
-        print(f"gimmick_card after load: {self.player.gimmick_card}")
 
     def _draw_sprites(self):
         hand_top = self.H - CARD_H - 100
@@ -539,6 +540,17 @@ class GameScene:
             parts.append(f"[BLEED x{self.boss.bleed_stacks}]")
         parts.append(f"= {self.anim_dmg}")
         return f"{self.anim_ddz_set.upper()}!  {'  '.join(parts)}"
+
+    def _draw_gimmick_notification(self):
+        if self.gimmick_notification_timer <= 0:
+            return
+        self.gimmick_notification_timer -= 1
+        alpha = min(255, self.gimmick_notification_timer * 4)
+        col = NEON_TEAL if self.gimmick_notification.startswith("+") else GREY
+        surf = self.font_ui.render(self.gimmick_notification, True, col)
+        surf.set_alpha(alpha)
+        self.screen.blit(surf, surf.get_rect(
+            left=40, centery=self.H // 2))
     # ── game logic ────────────────────────────────────────────
 
     def _play_turn(self):
@@ -624,9 +636,6 @@ class GameScene:
         self.boss.hp -= actual_dmg
         self.anim_dmg = actual_dmg
 
-        # apply gimmick card effect
-        print(f"checking gimmick card: player.gimmick_card={self.player.gimmick_card}")
-        print(f"cards played: {[c.value for c in cards]}")
         # apply gimmick card effects for all active gimmick cards
         for gimmick_val in self.player.gimmick_card:
             for card in cards:
@@ -759,11 +768,19 @@ class GameScene:
         elif effect == "plays_up":
             if random.randint(0, 1) == 1:
                 self.plays_remaining += 1
-                self.message += "  +1 PLAY!"
+                self.gimmick_notification = "+1 PLAY!"
+                self.gimmick_notification_timer = 120
+            else:
+                self.gimmick_notification = "NO BONUS"
+                self.gimmick_notification_timer = 120
         elif effect == "shuffles_up":
             if random.randint(0, 1) == 1:
                 self.shuffles_remaining += 1
-                self.message += "  +1 SHUFFLE!"
+                self.gimmick_notification = "+1 SHUFFLE!"
+                self.gimmick_notification_timer = 120
+            else:
+                self.gimmick_notification = "NO BONUS"
+                self.gimmick_notification_timer = 120
 
     def _load_boss_sprite(self):
         config = BOSS_CONFIGS[self.boss_index]
@@ -791,6 +808,8 @@ class GameScene:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_d:
                 self.debug_mode = not self.debug_mode
+            if event.key == pygame.K_k:  # ADD
+                self.boss.hp = 0
         if self.show_tutorial:
             if event.type == pygame.MOUSEMOTION:
                 self.tutorial_ok_hovered = self.tutorial_ok_btn.collidepoint(event.pos)
@@ -917,4 +936,5 @@ class GameScene:
             self._draw_shuffle_button()
             self._draw_settings_button()
         self._draw_played_cards()
+        self._draw_gimmick_notification()
         self._draw_tutorial()

@@ -3,7 +3,7 @@ import pygame
 import cv2
 from settings import resource_path, FONT_SIZE_SMALL
 
-class WinCutScene:
+class WinCutScene1:
     def __init__(self, screen, W, H, player=None):
         self.screen = screen
         self.W      = W
