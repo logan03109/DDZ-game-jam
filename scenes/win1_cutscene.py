@@ -12,9 +12,11 @@ class WinCutScene1:
 
         self.font_small = pygame.font.SysFont("couriernew", FONT_SIZE_SMALL)
 
+        pygame.mixer.music.load(resource_path("assets/audio/music/win.wav"))
         import settings as settings_module
 
         pygame.mixer.music.set_volume(settings_module.MUSIC_VOLUME * settings_module.MASTER_VOLUME)
+        pygame.mixer.music.play(-1)  # -1 loops forever
 
         # load video
         self.cap             = cv2.VideoCapture(resource_path("assets/lose_cutscene.mp4"))
@@ -37,7 +39,6 @@ class WinCutScene1:
 
     def _go_to_lose(self):
         self.cap.release()
-        pygame.mixer.music.stop()
         self.done = True
 
     def handle_event(self, event):

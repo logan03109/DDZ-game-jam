@@ -34,6 +34,7 @@ class SettingsScene:
         self.exit_hovered     = False
         self.request_windowed = False
         self.return_hovered = False
+        self.request_windowed = False
 
         # volume settings — load current values
         self.master_vol = MASTER_VOLUME
@@ -189,7 +190,9 @@ class SettingsScene:
 
         self._draw_button(self.return_btn, "[ RETURN TO GAME ]",
                           self.return_hovered, (0, 220, 180), (0, 60, 55))
-        self._draw_button(self.windowed_btn, "[ BORDERLESS WINDOW ]",
+        is_fullscreen = pygame.display.get_surface().get_flags() & pygame.FULLSCREEN
+        label = "[ WINDOWED ]" if is_fullscreen else "[ FULLSCREEN ]"
+        self._draw_button(self.windowed_btn, label,
                           self.windowed_hovered, (0, 180, 220), (0, 50, 70))
         self._draw_button(self.menu_btn, "[ MAIN MENU ]",
                           self.menu_hovered, (220, 175, 50), (60, 45, 0))

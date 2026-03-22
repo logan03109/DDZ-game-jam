@@ -31,6 +31,9 @@ class MenuScene:
         self.settings_btn = pygame.Rect((self.W - btn_w) // 2, self.H // 2 + 220, btn_w, btn_h)
         self.settings_hovered = False
 
+        self.credits_btn = pygame.Rect(self.W // 2 - 110, self.H // 2 + 300, 220, 55)
+        self.credits_hovered = False
+
         # Music
         pygame.mixer.music.load(resource_path("assets/audio/music/Main Menu GDLTDDZ.wav"))
         import settings as settings_module
@@ -155,12 +158,21 @@ class MenuScene:
         label_col = (180, 180, 220) if self.settings_hovered else (120, 120, 160)
         txt = self.font_btn.render("[ SETTINGS ]", True, label_col)
         self.screen.blit(txt, txt.get_rect(center=self.settings_btn.center))
+
+    def _draw_credits_button(self):
+        col = (60, 45, 0) if self.credits_hovered else (10, 10, 20)
+        label_col = (220, 175, 50) if self.credits_hovered else (160, 130, 40)
+        pygame.draw.rect(self.screen, col, self.credits_btn, border_radius=8)
+        pygame.draw.rect(self.screen, (220, 175, 50), self.credits_btn, 2, border_radius=8)
+        txt = self.font_btn.render("[ CREDITS ]", True, label_col)
+        self.screen.blit(txt, txt.get_rect(center=self.credits_btn.center))
     # ── scene interface ───────────────────────────────────────
     def handle_event(self, event):
         if event.type == pygame.MOUSEMOTION:
             self.btn_hovered = self.btn_rect.collidepoint(event.pos)
             self.exit_hovered = self.exit_btn.collidepoint(event.pos)
             self.settings_hovered = self.settings_btn.collidepoint(event.pos)
+            self.credits_hovered = self.credits_btn.collidepoint(event.pos)
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.btn_rect.collidepoint(event.pos):
@@ -173,6 +185,9 @@ class MenuScene:
             if self.settings_btn.collidepoint(event.pos):  # must be inside here
                 from scenes.settings_scene import SettingsScene
                 return SettingsScene(self.screen, self.W, self.H, self)
+            if self.credits_btn.collidepoint(event.pos):
+                from scenes.credits_scene import CreditsScene
+                return CreditsScene(self.screen, self.W, self.H)
 
         return None
 
@@ -188,11 +203,12 @@ class MenuScene:
         return None   # no scene transition from update (button handles it)
 
     def draw(self):
-        self.screen.fill((8, 12, 22))   # very dark navy, not pure black
+        self.screen.fill((8, 12, 22))
         self._draw_particles()
         self._draw_title()
         self._draw_button()
         self._draw_exit_button()
         self._draw_settings_button()
+        self._draw_credits_button()  # replace the broken call
         version_surf = self.font_version.render(GAME_VERSION, True, (80, 80, 100))
         self.screen.blit(version_surf, (10, self.H - 40))

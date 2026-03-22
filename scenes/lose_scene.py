@@ -25,11 +25,6 @@ class LoseScene:
         self.player = player
         pygame.mixer.music.stop()
         self.sound_lose = pygame.mixer.Sound(resource_path("assets/audio/sfx/lose.wav"))
-        pygame.mixer.music.load(resource_path("assets/audio/music/cutscene_audio.wav"))
-        import settings as settings_module
-
-        pygame.mixer.music.set_volume(settings_module.MUSIC_VOLUME * settings_module.MASTER_VOLUME)
-        pygame.mixer.music.play()
         self.sound_lose.play()
         try:
             self.bg_image = pygame.image.load(resource_path("assets/images/backgrounds/lose screen.png")).convert()
@@ -102,7 +97,7 @@ class LoseScene:
         self.screen.blit(title, title.get_rect(centerx=self.W // 2, centery=self.H // 2 - 80))
 
         # Subtitle
-        sub = self.font_sub.render("You ran out of plays. The Shadow Landlord wins.", True, (160, 80, 80))
+        sub = self.font_sub.render("You ran out of plays. The loop continues.", True, (160, 80, 80))
         self.screen.blit(sub, sub.get_rect(centerx=self.W // 2, centery=self.H // 2))
 
         self._draw_retained()

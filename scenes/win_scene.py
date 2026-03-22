@@ -23,15 +23,6 @@ class WinScene:
 
         self.tick       = 0
         self.particles  = [self._new_particle() for _ in range(80)]
-
-        # in win_scene.py __init__
-        pygame.mixer.music.stop()
-        pygame.mixer.music.load(resource_path("assets/audio/music/win.wav"))
-        import settings as settings_module
-
-        pygame.mixer.music.set_volume(settings_module.MUSIC_VOLUME * settings_module.MASTER_VOLUME)
-        pygame.mixer.music.play(-1)  # -1 loops forever
-
     def _new_particle(self):
         return {
             "x":     random.randint(0, self.W),
